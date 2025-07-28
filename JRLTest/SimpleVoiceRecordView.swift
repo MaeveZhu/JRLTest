@@ -2,12 +2,11 @@ import SwiftUI
 import AVFoundation
 
 struct SimpleVoiceRecordView: View {
-    @State private var isRecording = false
-    @State private var recordingStartTime: Date?
-    @State private var audioRecorder: AVAudioRecorder?
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
-    @State private var recordings: [URL] = []
+    @StateObject private var audioManager = AudioManager.shared
+    @State private var recordings: [RecordModel] = []
+    @State private var showingRecordingsList = false
+    @State private var showingPlaybackAlert = false
+    @State private var selectedRecording: RecordModel?
     
     var body: some View {
         VStack(spacing: 30) {
@@ -16,12 +15,12 @@ struct SimpleVoiceRecordView: View {
                 .fontWeight(.bold)
             
             // 录音状态
-            if isRecording {
+            if audioManager.isRecording {
                 HStack {
                     Image(systemName: "record.circle.fill")
                         .foregroundColor(.red)
                         .scaleEffect(1.2)
-                    Text("录音中: \(recordingDuration)")
+                    Text("录音中: \(audioManager.formatDuration(audioManager.recordingDuration))")
                         .font(.headline)
                         .foregroundColor(.red)
                 }
@@ -32,23 +31,23 @@ struct SimpleVoiceRecordView: View {
             // 录音按钮
             Button(action: {
                 print("录音按钮被点击")
-                if isRecording {
+                if audioManager.isRecording {
                     stopRecording()
                 } else {
                     startRecording()
                 }
             }) {
                 VStack(spacing: 10) {
-                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                    Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
                         .font(.system(size: 60))
                         .foregroundColor(.white)
                     
-                    Text(isRecording ? "停止录音" : "开始录音")
+                    Text(audioManager.isRecording ? "停止录音" : "开始录音")
                         .font(.title2)
                         .foregroundColor(.white)
                 }
                 .frame(width: 300, height: 300)
-                .background(isRecording ? Color.red : Color.blue)
+                .background(audioManager.isRecording ? Color.red : Color.blue)
                 .cornerRadius(150)
                 .shadow(radius: 10)
             }
@@ -59,8 +58,7 @@ struct SimpleVoiceRecordView: View {
             Button(action: {
                 print("录音列表按钮被点击")
                 loadRecordings()
-                showingAlert = true
-                alertMessage = "录音文件数量: \(recordings.count)"
+                showingRecordingsList = true
             }) {
                 VStack(spacing: 5) {
                     Image(systemName: "list.bullet")
@@ -72,129 +70,135 @@ struct SimpleVoiceRecordView: View {
             }
         }
         .padding()
-        .alert("录音状态", isPresented: $showingAlert) {
-            Button("确定") { }
+        .alert("录音状态", isPresented: .constant(audioManager.errorMessage != nil)) {
+            Button("确定") {
+                audioManager.clearError()
+            }
         } message: {
-            Text(alertMessage)
+            if let errorMessage = audioManager.errorMessage {
+                Text(errorMessage)
+            }
+        }
+        .sheet(isPresented: $showingRecordingsList) {
+            RecordingsListView(recordings: recordings) { recording in
+                selectedRecording = recording
+                showingPlaybackAlert = true
+            }
+        }
+        .alert("播放录音", isPresented: $showingPlaybackAlert) {
+            Button("播放") {
+                if let recording = selectedRecording {
+                    audioManager.startPlayback(url: recording.fileURL)
+                }
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            if let recording = selectedRecording {
+                Text("播放录音文件: \(recording.filename)")
+            }
         }
         .onAppear {
             loadRecordings()
         }
     }
     
-    private var recordingDuration: String {
-        guard let startTime = recordingStartTime else { return "00:00" }
-        let duration = Date().timeIntervalSince(startTime)
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-    
     private func loadRecordings() {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let recordingsDirectory = documentsPath.appendingPathComponent("Recordings", isDirectory: true)
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: recordingsDirectory, includingPropertiesForKeys: nil)
-            recordings = files.filter { $0.pathExtension == "m4a" }
-            print("加载录音列表: \(recordings.count) 个录音文件")
-        } catch {
-            print("加载录音列表失败: \(error.localizedDescription)")
-            recordings = []
-        }
+        recordings = audioManager.getRecordingsFromUserDefaults()
+        print("加载录音列表: \(recordings.count) 个录音文件")
     }
     
     private func startRecording() {
         print("=== 开始录音函数被调用 ===")
         
-        // 检查麦克风权限
-        let permissionStatus = AVAudioApplication.shared.recordPermission
-        print("麦克风权限状态: \(permissionStatus.rawValue)")
-        
-        if permissionStatus != .granted {
-            print("请求麦克风权限")
-            AVAudioApplication.requestRecordPermission { granted in
+        // Request permission if needed
+        audioManager.requestMicrophonePermission { granted in
+            if granted {
                 DispatchQueue.main.async {
-                    if granted {
-                        print("麦克风权限已获取，重新尝试录音")
-                        self.startRecording()
+                    if self.audioManager.startRecording() {
+                        print("✅ 录音开始成功")
                     } else {
-                        print("麦克风权限被拒绝")
-                        self.alertMessage = "麦克风权限被拒绝"
-                        self.showingAlert = true
+                        print("❌ 录音开始失败")
                     }
                 }
-            }
-            return
-        }
-        
-        do {
-            // 设置音频会话
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .default)
-            try audioSession.setActive(true)
-            
-            // 创建录音文件路径
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let recordingsDirectory = documentsPath.appendingPathComponent("Recordings", isDirectory: true)
-            
-            // 创建Recordings目录（如果不存在）
-            if !FileManager.default.fileExists(atPath: recordingsDirectory.path) {
-                try FileManager.default.createDirectory(at: recordingsDirectory, withIntermediateDirectories: true)
-            }
-            
-            let recordingName = "recording_\(Date().timeIntervalSince1970).m4a"
-            let audioFilename = recordingsDirectory.appendingPathComponent(recordingName)
-            
-            print("录音文件路径: \(audioFilename)")
-            
-            // 录音设置
-            let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44100.0,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-            ]
-            
-            // 创建录音器
-            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
-            
-            // 开始录音
-            if audioRecorder?.record() == true {
-                isRecording = true
-                recordingStartTime = Date()
-                print("✅ 录音开始成功")
-                alertMessage = "录音开始成功"
-                showingAlert = true
             } else {
-                print("❌ 录音开始失败")
-                alertMessage = "录音开始失败"
-                showingAlert = true
+                print("❌ 麦克风权限被拒绝")
             }
-        } catch {
-            print("❌ 录音设置失败: \(error.localizedDescription)")
-            alertMessage = "录音设置失败: \(error.localizedDescription)"
-            showingAlert = true
         }
     }
     
     private func stopRecording() {
         print("=== 停止录音函数被调用 ===")
         
-        audioRecorder?.stop()
-        
-        if let url = audioRecorder?.url {
-            print("✅ 录音已保存: \(url)")
-            alertMessage = "录音已保存: \(url.lastPathComponent)"
+        if let recordingURL = audioManager.stopRecording() {
+            print("✅ 录音已保存: \(recordingURL)")
             loadRecordings() // 重新加载录音列表
         } else {
             print("❌ 录音保存失败")
-            alertMessage = "录音保存失败"
         }
-        
-        isRecording = false
-        recordingStartTime = nil
-        audioRecorder = nil
-        showingAlert = true
+    }
+}
+
+// MARK: - Recordings List View
+struct RecordingsListView: View {
+    let recordings: [RecordModel]
+    let onRecordingSelected: (RecordModel) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            List(recordings) { recording in
+                RecordingRowView(recording: recording) {
+                    onRecordingSelected(recording)
+                    dismiss()
+                }
+            }
+            .navigationTitle("录音列表")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("关闭") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Recording Row View
+struct RecordingRowView: View {
+    let recording: RecordModel
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(recording.filename)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("时长: \(recording.formattedDuration)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("位置: \(recording.coordinateString)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("时间: \(recording.formattedTimestamp)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+            }
+            .padding(.vertical, 5)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 } 
