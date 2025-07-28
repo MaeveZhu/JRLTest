@@ -184,7 +184,7 @@ struct WorkingVoiceRecordView: View {
         }
         
         // 检查麦克风权限
-        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
+        let microphoneStatus = AVAudioApplication.shared.recordPermission
         print("麦克风权限状态: \(microphoneStatus.rawValue)")
         
         if microphoneStatus != .granted {

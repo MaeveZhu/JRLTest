@@ -108,12 +108,12 @@ struct SimpleVoiceRecordView: View {
         print("=== 开始录音函数被调用 ===")
         
         // 检查麦克风权限
-        let permissionStatus = AVAudioSession.sharedInstance().recordPermission
+        let permissionStatus = AVAudioApplication.shared.recordPermission
         print("麦克风权限状态: \(permissionStatus.rawValue)")
         
         if permissionStatus != .granted {
             print("请求麦克风权限")
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            AVAudioApplication.requestRecordPermission { granted in
                 DispatchQueue.main.async {
                     if granted {
                         print("麦克风权限已获取，重新尝试录音")

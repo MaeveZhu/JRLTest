@@ -1,14 +1,7 @@
 import SwiftUI
 import AVFoundation
 
-struct TestRecordingView: View {
-    let vin: String
-    let testExecutionId: String
-    let tag: String
-    let milesBefore: Int
-    @Binding var milesAfter: Int
-    @Binding var showingResultsView: Bool
-    
+struct SimpleTestRecordingView: View {
     @State private var isRecording = false
     @State private var recordingStartTime: Date?
     @State private var audioRecorder: AVAudioRecorder?
@@ -20,19 +13,6 @@ struct TestRecordingView: View {
             Text("录音测试")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-            
-            // 测试信息显示
-            VStack(spacing: 10) {
-                Text("VIN: \(vin)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Text("Test ID: \(testExecutionId)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Text("Tag: \(tag)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
             
             // 录音状态
             if isRecording {
@@ -80,7 +60,7 @@ struct TestRecordingView: View {
                 Text("1. 点击蓝色按钮开始录音")
                 Text("2. 按钮变红色表示正在录音")
                 Text("3. 再次点击停止录音")
-                Text("4. 录音完成后会显示结果页面")
+                Text("4. 录音文件会保存到Documents/Recordings目录")
             }
             .font(.caption)
             .foregroundColor(.gray)
@@ -138,7 +118,7 @@ struct TestRecordingView: View {
                 try FileManager.default.createDirectory(at: recordingsPath, withIntermediateDirectories: true)
             }
             
-            let fileName = "test_recording_\(Date().timeIntervalSince1970).m4a"
+            let fileName = "simple_test_recording_\(Date().timeIntervalSince1970).m4a"
             let fileURL = recordingsPath.appendingPathComponent(fileName)
             
             // 录音设置
@@ -180,24 +160,11 @@ struct TestRecordingView: View {
         print("✅ 录音已停止")
         alertMessage = "录音已停止并保存"
         showingAlert = true
-        
-        // 模拟测试完成，更新milesAfter并显示结果
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            milesAfter = milesBefore + Int.random(in: 1...50) // 模拟行驶距离
-            showingResultsView = true
-        }
     }
 }
 
-struct TestRecordingView_Previews: PreviewProvider {
+struct SimpleTestRecordingView_Previews: PreviewProvider {
     static var previews: some View {
-        TestRecordingView(
-            vin: "TEST123",
-            testExecutionId: "EXEC001",
-            tag: "Engine Test",
-            milesBefore: 100,
-            milesAfter: .constant(120),
-            showingResultsView: .constant(false)
-        )
+        SimpleTestRecordingView()
     }
 } 

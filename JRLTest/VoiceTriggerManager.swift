@@ -51,6 +51,27 @@ class VoiceTriggerManager: NSObject, ObservableObject, SFSpeechRecognizerDelegat
     }
     
     func requestPermissions(completion: @escaping (Bool) -> Void) {
+        // 首先检查麦克风权限
+        let microphoneStatus = AVAudioApplication.shared.recordPermission
+        if microphoneStatus != .granted {
+            AVAudioApplication.requestRecordPermission { granted in
+                if granted {
+                    // 麦克风权限获取成功，继续请求语音识别权限
+                    self.requestSpeechRecognitionPermission(completion: completion)
+                } else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "麦克风权限被拒绝"
+                        completion(false)
+                    }
+                }
+            }
+        } else {
+            // 麦克风权限已获取，直接请求语音识别权限
+            requestSpeechRecognitionPermission(completion: completion)
+        }
+    }
+    
+    private func requestSpeechRecognitionPermission(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { status in
             DispatchQueue.main.async {
                 switch status {
@@ -74,6 +95,12 @@ class VoiceTriggerManager: NSObject, ObservableObject, SFSpeechRecognizerDelegat
     func startListening() throws {
         guard !isProcessingAudio else {
             throw VoiceTriggerError.alreadyProcessing
+        }
+        
+        // 检查麦克风权限
+        let microphoneStatus = AVAudioApplication.shared.recordPermission
+        if microphoneStatus != .granted {
+            throw VoiceTriggerError.microphonePermissionDenied
         }
         
         // 延迟初始化
@@ -202,7 +229,6 @@ class VoiceTriggerManager: NSObject, ObservableObject, SFSpeechRecognizerDelegat
         DispatchQueue.main.async {
             if !available {
                 self.errorMessage = "语音识别服务不可用"
-                self.stopListening()
             } else {
                 self.errorMessage = nil
             }
@@ -210,19 +236,24 @@ class VoiceTriggerManager: NSObject, ObservableObject, SFSpeechRecognizerDelegat
     }
 }
 
+// MARK: - Error Types
+
 enum VoiceTriggerError: Error, LocalizedError {
+    case alreadyProcessing
     case recognizerNotAvailable
     case audioEngineError
-    case alreadyProcessing
+    case microphonePermissionDenied
     
     var errorDescription: String? {
         switch self {
+        case .alreadyProcessing:
+            return "语音识别正在进行中"
         case .recognizerNotAvailable:
-            return "语音识别器不可用"
+            return "语音识别服务不可用"
         case .audioEngineError:
             return "音频引擎错误"
-        case .alreadyProcessing:
-            return "正在处理音频，请稍后再试"
+        case .microphonePermissionDenied:
+            return "麦克风权限被拒绝"
         }
     }
 } 

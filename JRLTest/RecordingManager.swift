@@ -35,7 +35,7 @@ class RecordingManager: NSObject, ObservableObject {
         print("✅ 音频会话已配置")
         
         // 检查麦克风权限
-        let permissionStatus = AVAudioSession.sharedInstance().recordPermission
+        let permissionStatus = AVAudioApplication.shared.recordPermission
         print("麦克风权限状态: \(permissionStatus.rawValue)")
         
         guard permissionStatus == .granted else {

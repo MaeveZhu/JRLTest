@@ -30,7 +30,7 @@ struct ContentView: View {
                         .cornerRadius(15)
                     }
                     
-                    NavigationLink(destination: TestRecordingView()) {
+                    NavigationLink(destination: SimpleTestRecordingView()) {
                         VStack(spacing: 10) {
                             Image(systemName: "mic.circle")
                                 .font(.system(size: 50))

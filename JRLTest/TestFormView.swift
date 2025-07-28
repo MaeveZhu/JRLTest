@@ -28,130 +28,197 @@ struct TestFormView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // 标题
-                Text("Fill in Form 1")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                
-                // 表单容器
-                VStack(spacing: 20) {
-                    // VIN输入
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("VIN:")
-                            .font(.headline)
-                        TextField("Enter VIN", text: $vin)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                    
-                    // Test Execution ID输入
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Test Execution ID:")
-                            .font(.headline)
-                        TextField("Enter Test Execution ID", text: $testExecutionId)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                    
-                    // Tag选择
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Tag (what are you testing today):")
-                            .font(.headline)
-                        Picker("Select Tag", selection: $selectedTag) {
-                            ForEach(availableTags, id: \.self) { tag in
-                                Text(tag).tag(tag)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(8)
-                    }
-                    
-                    // Miles Before
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Miles Before:")
-                            .font(.headline)
-                        HStack {
-                            TextField("Miles", value: $milesBefore, format: .number)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .keyboardType(.numberPad)
-                            
-                            Stepper("", value: $milesBefore, in: 0...999999)
-                                .labelsHidden()
-                        }
-                    }
-                    
-                    // Start按钮
-                    Button(action: {
-                        checkPermissionsAndStart()
-                    }) {
-                        Text("Start")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(10)
-                    }
-                    .disabled(vin.isEmpty || testExecutionId.isEmpty)
-                }
-                .padding()
-                .background(Color.white)
-                .cornerRadius(15)
-                .shadow(radius: 5)
-                .padding(.horizontal)
-                
-                Spacer()
-            }
-            .background(Color.gray.opacity(0.1))
-            .navigationTitle("Vehicle Test Form")
-            .navigationBarTitleDisplayMode(.inline)
+            mainContent
         }
         .sheet(isPresented: $showingRecordingView) {
-            TestRecordingView(
-                vin: vin,
-                testExecutionId: testExecutionId,
-                tag: selectedTag,
-                milesBefore: milesBefore,
-                milesAfter: $milesAfter,
-                showingResultsView: $showingResultsView
-            )
+            recordingView
         }
         .sheet(isPresented: $showingResultsView) {
-            TestResultsView(
-                vin: vin,
-                testExecutionId: testExecutionId,
-                tag: selectedTag,
-                milesBefore: milesBefore,
-                milesAfter: milesAfter
-            )
+            resultsView
         }
         .alert("位置权限", isPresented: $showingLocationPermissionAlert) {
+            locationPermissionButtons
+        } message: {
+            locationPermissionMessage
+        }
+        .alert("麦克风权限", isPresented: $showingMicrophonePermissionAlert) {
+            microphonePermissionButtons
+        } message: {
+            microphonePermissionMessage
+        }
+        .alert("权限提示", isPresented: $showingPermissionAlert) {
+            permissionButtons
+        } message: {
+            permissionMessage
+        }
+    }
+    
+    // MARK: - View Components
+    
+    private var mainContent: some View {
+        VStack(spacing: 20) {
+            titleSection
+            formContainer
+            Spacer()
+        }
+        .background(Color.gray.opacity(0.1))
+        .navigationTitle("Vehicle Test Form")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private var titleSection: some View {
+        Text("Fill in Form 1")
+            .font(.title)
+            .fontWeight(.bold)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+    }
+    
+    private var formContainer: some View {
+        VStack(spacing: 20) {
+            vinInputSection
+            testExecutionIdSection
+            tagSelectionSection
+            milesBeforeSection
+            startButtonSection
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(radius: 5)
+        .padding(.horizontal)
+    }
+    
+    private var vinInputSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("VIN:")
+                .font(.headline)
+            TextField("Enter VIN", text: $vin)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+        }
+    }
+    
+    private var testExecutionIdSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Test Execution ID:")
+                .font(.headline)
+            TextField("Enter Test Execution ID", text: $testExecutionId)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+        }
+    }
+    
+    private var tagSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Tag (what are you testing today):")
+                .font(.headline)
+            tagPicker
+        }
+    }
+    
+    private var tagPicker: some View {
+        Picker("Select Tag", selection: $selectedTag) {
+            ForEach(availableTags, id: \.self) { tag in
+                Text(tag).tag(tag)
+            }
+        }
+        .pickerStyle(MenuPickerStyle())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(8)
+    }
+    
+    private var milesBeforeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Miles Before:")
+                .font(.headline)
+            HStack {
+                TextField("Miles", value: $milesBefore, format: .number)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.numberPad)
+                
+                Stepper("", value: $milesBefore, in: 0...999999)
+                    .labelsHidden()
+            }
+        }
+    }
+    
+    private var startButtonSection: some View {
+        Button(action: {
+            checkPermissionsAndStart()
+        }) {
+            startButtonContent
+        }
+        .disabled(vin.isEmpty || testExecutionId.isEmpty)
+    }
+    
+    private var startButtonContent: some View {
+        Text("Start")
+            .font(.title2)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.orange)
+            .cornerRadius(10)
+    }
+    
+    private var recordingView: some View {
+        TestRecordingView(
+            vin: vin,
+            testExecutionId: testExecutionId,
+            tag: selectedTag,
+            milesBefore: milesBefore,
+            milesAfter: $milesAfter,
+            showingResultsView: $showingResultsView
+        )
+    }
+    
+    private var resultsView: some View {
+        TestResultsView(
+            vin: vin,
+            testExecutionId: testExecutionId,
+            tag: selectedTag,
+            milesBefore: milesBefore,
+            milesAfter: milesAfter
+        )
+    }
+    
+    private var locationPermissionButtons: some View {
+        Group {
             Button("允许") {
                 locationManager.requestLocationPermission()
             }
             Button("取消", role: .cancel) { }
-        } message: {
-            Text("需要位置权限来记录测试时的GPS坐标")
         }
-        .alert("麦克风权限", isPresented: $showingMicrophonePermissionAlert) {
+    }
+    
+    private var locationPermissionMessage: some View {
+        Text("需要位置权限来记录测试时的GPS坐标")
+    }
+    
+    private var microphonePermissionButtons: some View {
+        Group {
             Button("允许") {
                 requestMicrophonePermission()
             }
             Button("取消", role: .cancel) { }
-        } message: {
-            Text("需要麦克风权限来进行语音录音和语音识别")
-        }
-        .alert("权限提示", isPresented: $showingPermissionAlert) {
-            Button("确定") { }
-        } message: {
-            Text(permissionAlertMessage)
         }
     }
+    
+    private var microphonePermissionMessage: some View {
+        Text("需要麦克风权限来进行语音录音和语音识别")
+    }
+    
+    private var permissionButtons: some View {
+        Button("确定") { }
+    }
+    
+    private var permissionMessage: some View {
+        Text(permissionAlertMessage)
+    }
+    
+    // MARK: - Methods
     
     private func checkPermissionsAndStart() {
         // 检查位置权限
@@ -161,7 +228,7 @@ struct TestFormView: View {
         }
         
         // 检查麦克风权限
-        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
+        let microphoneStatus = AVAudioApplication.shared.recordPermission
         if microphoneStatus != .granted {
             showingMicrophonePermissionAlert = true
             return
@@ -172,7 +239,7 @@ struct TestFormView: View {
     }
     
     private func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+        AVAudioApplication.requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
                     // 权限获取成功，可以开始

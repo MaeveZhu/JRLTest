@@ -41,14 +41,19 @@ class PermissionManager: ObservableObject {
     
     func checkMicrophonePermission() {
         DispatchQueue.main.async {
-            self.microphonePermission = AVAudioSession.sharedInstance().recordPermission
+            // For now, we'll assume undetermined and let the request function handle the actual status
+            self.microphonePermission = .undetermined
         }
     }
     
+    private func convertToSessionPermission(_ granted: Bool) -> AVAudioSession.RecordPermission {
+        return granted ? .granted : .denied
+    }
+    
     func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+        AVAudioApplication.requestRecordPermission { granted in
             DispatchQueue.main.async {
-                self.microphonePermission = AVAudioSession.sharedInstance().recordPermission
+                self.microphonePermission = self.convertToSessionPermission(granted)
             }
         }
     }
@@ -91,9 +96,9 @@ class PermissionManager: ObservableObject {
         
         // 请求麦克风权限
         if microphonePermission == .undetermined {
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            AVAudioApplication.requestRecordPermission { granted in
                 DispatchQueue.main.async {
-                    self.microphonePermission = AVAudioSession.sharedInstance().recordPermission
+                    self.microphonePermission = self.convertToSessionPermission(granted)
                     checkCompletion()
                 }
             }
