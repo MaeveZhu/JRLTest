@@ -9,13 +9,27 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            VStack(spacing: 30) {
+                NavigationLink(destination: VoiceRecordView()) {
+                    Text("Talk")
+                        .font(.largeTitle)
+                        .frame(width: 300, height: 300)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                NavigationLink(destination: WebViewScreen()) {
+                    Text("Web")
+                        .font(.largeTitle)
+                        .frame(width: 300, height:300)
+                        .background(Color.pink)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+            }
+            .navigationTitle("JRLTest Home")
         }
-        .padding()
     }
 }
 
