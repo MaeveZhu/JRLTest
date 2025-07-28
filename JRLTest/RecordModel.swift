@@ -2,7 +2,7 @@ import Foundation
 import CoreLocation
 
 struct RecordModel: Identifiable, Codable {
-    let id = UUID()
+    let id: UUID
     let filename: String
     let fileURL: URL
     let coordinate: CLLocationCoordinate2D
@@ -11,6 +11,7 @@ struct RecordModel: Identifiable, Codable {
     let fileSize: String
     
     init(filename: String, fileURL: URL, coordinate: CLLocationCoordinate2D, duration: TimeInterval = 0) {
+        self.id = UUID()
         self.filename = filename
         self.fileURL = fileURL
         self.coordinate = coordinate

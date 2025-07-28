@@ -1,16 +1,17 @@
 import SwiftUI
 import AVFoundation
 
-struct TestRecordingView: View {
+struct SimpleVoiceRecordView: View {
     @State private var isRecording = false
     @State private var recordingStartTime: Date?
     @State private var audioRecorder: AVAudioRecorder?
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var recordings: [URL] = []
     
     var body: some View {
         VStack(spacing: 30) {
-            Text("录音测试")
+            Text("语音录音")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
@@ -30,6 +31,7 @@ struct TestRecordingView: View {
             
             // 录音按钮
             Button(action: {
+                print("录音按钮被点击")
                 if isRecording {
                     stopRecording()
                 } else {
@@ -53,23 +55,30 @@ struct TestRecordingView: View {
             
             Spacer()
             
-            // 测试说明
-            VStack(spacing: 10) {
-                Text("测试说明:")
-                    .font(.headline)
-                Text("1. 点击蓝色按钮开始录音")
-                Text("2. 按钮变红色表示正在录音")
-                Text("3. 再次点击停止录音")
-                Text("4. 录音文件会保存到Documents/Recordings目录")
+            // 录音列表按钮
+            Button(action: {
+                print("录音列表按钮被点击")
+                loadRecordings()
+                showingAlert = true
+                alertMessage = "录音文件数量: \(recordings.count)"
+            }) {
+                VStack(spacing: 5) {
+                    Image(systemName: "list.bullet")
+                        .font(.title2)
+                    Text("录音列表 (\(recordings.count))")
+                        .font(.caption)
+                }
+                .foregroundColor(.green)
             }
-            .font(.caption)
-            .foregroundColor(.gray)
         }
         .padding()
         .alert("录音状态", isPresented: $showingAlert) {
             Button("确定") { }
         } message: {
             Text(alertMessage)
+        }
+        .onAppear {
+            loadRecordings()
         }
     }
     
@@ -81,8 +90,22 @@ struct TestRecordingView: View {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
+    private func loadRecordings() {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let recordingsDirectory = documentsPath.appendingPathComponent("Recordings", isDirectory: true)
+        
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: recordingsDirectory, includingPropertiesForKeys: nil)
+            recordings = files.filter { $0.pathExtension == "m4a" }
+            print("加载录音列表: \(recordings.count) 个录音文件")
+        } catch {
+            print("加载录音列表失败: \(error.localizedDescription)")
+            recordings = []
+        }
+    }
+    
     private func startRecording() {
-        print("=== 开始录音测试 ===")
+        print("=== 开始录音函数被调用 ===")
         
         // 检查麦克风权限
         let permissionStatus = AVAudioSession.sharedInstance().recordPermission
@@ -93,8 +116,10 @@ struct TestRecordingView: View {
             AVAudioSession.sharedInstance().requestRecordPermission { granted in
                 DispatchQueue.main.async {
                     if granted {
+                        print("麦克风权限已获取，重新尝试录音")
                         self.startRecording()
                     } else {
+                        print("麦克风权限被拒绝")
                         self.alertMessage = "麦克风权限被拒绝"
                         self.showingAlert = true
                     }
@@ -118,7 +143,7 @@ struct TestRecordingView: View {
                 try FileManager.default.createDirectory(at: recordingsDirectory, withIntermediateDirectories: true)
             }
             
-            let recordingName = "test_recording_\(Date().timeIntervalSince1970).m4a"
+            let recordingName = "recording_\(Date().timeIntervalSince1970).m4a"
             let audioFilename = recordingsDirectory.appendingPathComponent(recordingName)
             
             print("录音文件路径: \(audioFilename)")
@@ -154,13 +179,14 @@ struct TestRecordingView: View {
     }
     
     private func stopRecording() {
-        print("=== 停止录音测试 ===")
+        print("=== 停止录音函数被调用 ===")
         
         audioRecorder?.stop()
         
         if let url = audioRecorder?.url {
             print("✅ 录音已保存: \(url)")
             alertMessage = "录音已保存: \(url.lastPathComponent)"
+            loadRecordings() // 重新加载录音列表
         } else {
             print("❌ 录音保存失败")
             alertMessage = "录音保存失败"

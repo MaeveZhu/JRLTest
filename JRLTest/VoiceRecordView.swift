@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import AVFoundation // Added for AVAudioSession
 
 struct VoiceRecordView: View {
     @StateObject private var voiceTriggerManager = VoiceTriggerManager()
@@ -10,6 +11,10 @@ struct VoiceRecordView: View {
     @State private var permissionAlertMessage = ""
     @State private var showingRecordingsList = false
     @State private var isInitialized = false
+    @State private var showingVoiceWakeupSettings = false
+    @State private var isProcessingGesture = false
+    @State private var showingLocationPermissionAlert = false
+    @State private var showingMicrophonePermissionAlert = false
     
     var body: some View {
         VStack(spacing: 30) {
@@ -29,6 +34,23 @@ struct VoiceRecordView: View {
                         .foregroundColor(voiceStatusColor)
                     Text(voiceStatusText)
                         .font(.caption)
+                }
+                
+                // 语音唤醒状态
+                if voiceTriggerManager.isListening {
+                    HStack {
+                        Image(systemName: "ear.fill")
+                            .foregroundColor(.blue)
+                        Text("语音唤醒: 已开启")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        
+                        if voiceTriggerManager.confidence > 0 {
+                            Text("置信度: \(Int(voiceTriggerManager.confidence * 100))%")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
                 
                 // 录音状态
@@ -63,21 +85,26 @@ struct VoiceRecordView: View {
                         .font(.title2)
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
+                    
+                    // 语音唤醒提示
+                    if voiceTriggerManager.isListening && !recordingManager.isRecording {
+                        Text("说\"开始录音\"即可自动开始")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.top, 5)
+                    }
                 }
             }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
-                        if !recordingManager.isRecording && canStartRecording {
-                            startRecording()
-                        }
+                        handleGestureChanged()
                     }
                     .onEnded { _ in
-                        if recordingManager.isRecording {
-                            stopRecording()
-                        }
+                        handleGestureEnded()
                     }
             )
+            .disabled(isProcessingGesture)
             
             Spacer()
             
@@ -92,76 +119,147 @@ struct VoiceRecordView: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
+                        .animation(.easeInOut, value: voiceTriggerManager.recognizedText)
                 }
                 .padding(.horizontal)
             }
             
             // 底部按钮
             HStack(spacing: 30) {
-                Button("查看录音") {
-                    showingRecordingsList = true
+                // 语音唤醒开关
+                Button(action: toggleVoiceListening) {
+                    VStack(spacing: 5) {
+                        Image(systemName: voiceTriggerManager.isListening ? "ear.slash" : "ear")
+                            .font(.title2)
+                        Text(voiceTriggerManager.isListening ? "关闭语音唤醒" : "开启语音唤醒")
+                            .font(.caption)
+                    }
+                    .foregroundColor(voiceTriggerManager.isListening ? .red : .blue)
                 }
-                .buttonStyle(.bordered)
+                .disabled(isProcessingGesture)
                 
-                Button(voiceTriggerManager.isListening ? "停止监听" : "开始监听") {
-                    toggleVoiceListening()
+                // 录音列表
+                Button(action: { showingRecordingsList = true }) {
+                    VStack(spacing: 5) {
+                        Image(systemName: "list.bullet")
+                            .font(.title2)
+                        Text("录音列表")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.green)
                 }
-                .buttonStyle(.bordered)
-                .foregroundColor(voiceTriggerManager.isListening ? .red : .blue)
+                .disabled(isProcessingGesture)
             }
-            .padding(.bottom)
         }
-        .navigationTitle("语音录音")
         .onAppear {
-            if !isInitialized {
-                setupPermissions()
-                isInitialized = true
+            // 移除早期初始化，避免启动时崩溃
+        }
+        .onReceive(voiceTriggerManager.$triggerDetected) { detected in
+            if detected && !recordingManager.isRecording {
+                safeStartRecording()
             }
         }
-        .alert("权限请求", isPresented: $showingPermissionAlert) {
+        .sheet(isPresented: $showingRecordingsList) {
+            // Use the RecordingsListView from WorkingVoiceRecordView
+            Text("录音列表功能已移至简化版本")
+                .navigationTitle("录音列表")
+        }
+        .alert("权限提示", isPresented: $showingPermissionAlert) {
             Button("确定") { }
         } message: {
             Text(permissionAlertMessage)
         }
-        .sheet(isPresented: $showingRecordingsList) {
-            RecordingsListView()
+        .alert("位置权限", isPresented: $showingLocationPermissionAlert) {
+            Button("允许") {
+                locationManager.requestLocationPermission()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("需要位置权限来记录录音时的GPS坐标")
+        }
+        .alert("麦克风权限", isPresented: $showingMicrophonePermissionAlert) {
+            Button("允许") {
+                requestMicrophonePermission()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("需要麦克风权限来进行语音录音和语音识别")
+        }
+    }
+    
+    // MARK: - Safe Gesture Handling
+    
+    private func handleGestureChanged() {
+        guard !isProcessingGesture else { return }
+        
+        DispatchQueue.main.async {
+            isProcessingGesture = true
+            
+            if !recordingManager.isRecording && canStartRecording {
+                safeStartRecording()
+            }
+        }
+    }
+    
+    private func handleGestureEnded() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if recordingManager.isRecording {
+                safeStopRecording()
+            }
+            isProcessingGesture = false
+        }
+    }
+    
+    // MARK: - Safe Recording Methods
+    
+    private func safeStartRecording() {
+        guard !recordingManager.isRecording else { return }
+        
+        DispatchQueue.main.async {
+            startRecording()
+        }
+    }
+    
+    private func safeStopRecording() {
+        guard recordingManager.isRecording else { return }
+        
+        DispatchQueue.main.async {
+            stopRecording()
         }
     }
     
     // MARK: - Computed Properties
     
     private var canStartRecording: Bool {
-        guard let location = locationManager.currentLocation else { return false }
-        return locationManager.authorizationStatus == .authorizedWhenInUse
+        locationManager.locationStatus == .available && 
+        locationManager.currentLocation != nil
     }
     
     private var buttonColor: Color {
         if recordingManager.isRecording {
             return .red
-        } else if voiceTriggerManager.triggerDetected {
-            return .orange
-        } else {
+        } else if voiceTriggerManager.isListening {
             return .blue
+        } else {
+            return .gray
         }
     }
     
     private var buttonIcon: String {
         if recordingManager.isRecording {
-            return "stop.circle.fill"
-        } else if voiceTriggerManager.triggerDetected {
-            return "mic.circle.fill"
+            return "stop.fill"
         } else {
-            return "mic.circle"
+            return "mic.fill"
         }
     }
     
     private var buttonText: String {
         if recordingManager.isRecording {
-            return "松开停止录音"
-        } else if voiceTriggerManager.triggerDetected {
-            return "语音触发！\n点击开始录音"
+            return "停止录音"
+        } else if voiceTriggerManager.isListening {
+            return "点击录音\n或语音唤醒"
         } else {
-            return "按住录音\n或说\"开始记录\""
+            return "点击开始录音"
         }
     }
     
@@ -174,7 +272,7 @@ struct VoiceRecordView: View {
         case .error:
             return "exclamationmark.triangle"
         case .unknown:
-            return "location"
+            return "questionmark.circle"
         }
     }
     
@@ -182,21 +280,19 @@ struct VoiceRecordView: View {
         switch locationManager.locationStatus {
         case .available:
             return .green
-        case .denied, .error:
+        case .denied:
             return .red
-        case .unknown:
+        case .error:
             return .orange
+        case .unknown:
+            return .gray
         }
     }
     
     private var locationStatusText: String {
         switch locationManager.locationStatus {
         case .available:
-            if let location = locationManager.currentLocation {
-                return String(format: "GPS: %.6f, %.6f", location.latitude, location.longitude)
-            } else {
-                return "GPS: 获取中..."
-            }
+            return "GPS: 已授权"
         case .denied:
             return "GPS: 权限被拒绝"
         case .error(let message):
@@ -232,40 +328,20 @@ struct VoiceRecordView: View {
     
     // MARK: - Methods
     
-    private func setupPermissions() {
-        // 延迟初始化，避免启动时崩溃
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // 请求定位权限
-            locationManager.requestLocationPermission()
-            
-            // 请求语音识别权限
-            voiceTriggerManager.requestPermissions { granted in
-                if granted {
-                    print("语音识别权限已获取")
-                } else {
-                    DispatchQueue.main.async {
-                        permissionAlertMessage = "需要语音识别权限才能使用语音触发功能"
-                        showingPermissionAlert = true
-                    }
-                }
-            }
-        }
-    }
-    
-    private func toggleVoiceListening() {
-        if voiceTriggerManager.isListening {
-            voiceTriggerManager.stopListening()
-        } else {
-            do {
-                try voiceTriggerManager.startListening()
-            } catch {
-                permissionAlertMessage = "启动语音监听失败: \(error.localizedDescription)"
-                showingPermissionAlert = true
-            }
-        }
-    }
-    
     private func startRecording() {
+        // 检查位置权限
+        if locationManager.locationStatus != .available {
+            showingLocationPermissionAlert = true
+            return
+        }
+        
+        // 检查麦克风权限
+        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
+        if microphoneStatus != .granted {
+            showingMicrophonePermissionAlert = true
+            return
+        }
+        
         guard let coordinate = locationManager.currentLocation else {
             permissionAlertMessage = "无法获取GPS位置，请检查定位权限"
             showingPermissionAlert = true
@@ -285,61 +361,40 @@ struct VoiceRecordView: View {
             print("录音已保存: \(recordingURL)")
         }
     }
+    
+    private func toggleVoiceListening() {
+        guard !isProcessingGesture else { return }
+        
+        DispatchQueue.main.async {
+            if voiceTriggerManager.isListening {
+                voiceTriggerManager.stopListening()
+            } else {
+                do {
+                    try voiceTriggerManager.startListening()
+                } catch {
+                    permissionAlertMessage = "启动语音监听失败: \(error.localizedDescription)"
+                    showingPermissionAlert = true
+                }
+            }
+        }
+    }
+    
+    private func requestMicrophonePermission() {
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                if granted {
+                    // 权限获取成功，可以开始录音
+                    print("麦克风权限已获取")
+                } else {
+                    self.permissionAlertMessage = "麦克风权限被拒绝，无法进行录音"
+                    self.showingPermissionAlert = true
+                }
+            }
+        }
+    }
 }
 
-// MARK: - Recordings List View
-struct RecordingsListView: View {
-    @State private var recordings: [RecordModel] = []
-    
-    var body: some View {
-        NavigationView {
-            List(recordings) { recording in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(recording.filename)
-                        .font(.headline)
-                    
-                    Text("时间: \(recording.formattedTimestamp)")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
-                    Text("位置: \(recording.coordinateString)")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
-                    Text("时长: \(recording.formattedDuration) | 大小: \(recording.fileSize)")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-            }
-            .navigationTitle("录音列表")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("刷新") {
-                        loadRecordings()
-                    }
-                }
-            }
-        }
-        .onAppear {
-            loadRecordings()
-        }
-    }
-    
-    private func loadRecordings() {
-        let urls = FileManagerHelper.getAllRecordings()
-        recordings = urls.compactMap { url in
-            guard let coordinate = FileManagerHelper.parseCoordinateFromFilename(url.lastPathComponent) else {
-                return nil
-            }
-            return RecordModel(
-                filename: url.lastPathComponent,
-                fileURL: url,
-                coordinate: coordinate
-            )
-        }
-    }
-}
+// RecordingsListView has been moved to WorkingVoiceRecordView.swift
 
 struct VoiceRecordView_Previews: PreviewProvider {
     static var previews: some View {

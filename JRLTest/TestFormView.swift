@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFoundation
+import CoreLocation
 
 struct TestFormView: View {
     @State private var vin = ""
@@ -8,6 +10,12 @@ struct TestFormView: View {
     @State private var milesAfter = 160
     @State private var showingRecordingView = false
     @State private var showingResultsView = false
+    @State private var showingLocationPermissionAlert = false
+    @State private var showingMicrophonePermissionAlert = false
+    @State private var showingPermissionAlert = false
+    @State private var permissionAlertMessage = ""
+    
+    @StateObject private var locationManager = LocationManager()
     
     let availableTags = [
         "Engine Test",
@@ -78,7 +86,7 @@ struct TestFormView: View {
                     
                     // Start按钮
                     Button(action: {
-                        showingRecordingView = true
+                        checkPermissionsAndStart()
                     }) {
                         Text("Start")
                             .font(.title2)
@@ -121,6 +129,59 @@ struct TestFormView: View {
                 milesBefore: milesBefore,
                 milesAfter: milesAfter
             )
+        }
+        .alert("位置权限", isPresented: $showingLocationPermissionAlert) {
+            Button("允许") {
+                locationManager.requestLocationPermission()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("需要位置权限来记录测试时的GPS坐标")
+        }
+        .alert("麦克风权限", isPresented: $showingMicrophonePermissionAlert) {
+            Button("允许") {
+                requestMicrophonePermission()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("需要麦克风权限来进行语音录音和语音识别")
+        }
+        .alert("权限提示", isPresented: $showingPermissionAlert) {
+            Button("确定") { }
+        } message: {
+            Text(permissionAlertMessage)
+        }
+    }
+    
+    private func checkPermissionsAndStart() {
+        // 检查位置权限
+        if locationManager.locationStatus != .available {
+            showingLocationPermissionAlert = true
+            return
+        }
+        
+        // 检查麦克风权限
+        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
+        if microphoneStatus != .granted {
+            showingMicrophonePermissionAlert = true
+            return
+        }
+        
+        // 所有权限都已获取，可以开始
+        showingRecordingView = true
+    }
+    
+    private func requestMicrophonePermission() {
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                if granted {
+                    // 权限获取成功，可以开始
+                    self.showingRecordingView = true
+                } else {
+                    self.permissionAlertMessage = "麦克风权限被拒绝，无法进行录音"
+                    self.showingPermissionAlert = true
+                }
+            }
         }
     }
 }
