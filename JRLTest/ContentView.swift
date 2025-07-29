@@ -11,16 +11,16 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 40) {
-                Text("...")
+                Text("JRL Test")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
                 VStack(spacing: 20) {
-                    NavigationLink(destination: SimpleVoiceRecordView()) {
+                    NavigationLink(destination: TestFormView()) {
                         VStack(spacing: 10) {
-                            Image(systemName: "mic.circle.fill")
+                            Image(systemName: "doc.text.fill")
                                 .font(.system(size: 50))
-                            Text("语音录音")
+                            Text("开始测试")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                         }
@@ -30,25 +30,11 @@ struct ContentView: View {
                         .cornerRadius(15)
                     }
                     
-                    NavigationLink(destination: SimpleTestRecordingView()) {
+                    NavigationLink(destination: DrivingRecordsView()) {
                         VStack(spacing: 10) {
-                            Image(systemName: "mic.circle")
+                            Image(systemName: "list.bullet.clipboard")
                                 .font(.system(size: 50))
-                            Text("录音测试")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(width: 300, height: 200)
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(15)
-                    }
-                    
-                    NavigationLink(destination: TestFormView()) {
-                        VStack(spacing: 10) {
-                            Image(systemName: "doc.text.fill")
-                                .font(.system(size: 50))
-                            Text("测试表单")
+                            Text("行车记录")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                         }

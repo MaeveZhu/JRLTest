@@ -170,16 +170,61 @@ class AudioManager: NSObject, ObservableObject {
         
         if let url = recordingURL {
             print("✅ Recording stopped: \(url)")
-            
-            // Save recording metadata if coordinate is available
-            if let coordinate = extractCoordinateFromFilename(url.lastPathComponent) {
-                saveRecordingMetadata(url: url, coordinate: coordinate)
-            }
-            
             return url
         }
         
         return nil
+    }
+    
+    // MARK: - New method for saving with form data
+    func saveRecordingWithFormData(
+        url: URL,
+        vin: String,
+        testExecutionId: String,
+        tag: String,
+        milesBefore: Int,
+        milesAfter: Int,
+        startCoordinate: CLLocationCoordinate2D?,
+        endCoordinate: CLLocationCoordinate2D?
+    ) {
+        let recordingInfo = RecordModel(
+            filename: url.lastPathComponent,
+            fileURL: url,
+            vin: vin,
+            testExecutionId: testExecutionId,
+            tag: tag,
+            milesBefore: milesBefore,
+            milesAfter: milesAfter,
+            startCoordinate: startCoordinate,
+            endCoordinate: endCoordinate,
+            duration: recordingDuration
+        )
+        
+        // Save to DrivingRecords
+        saveDrivingRecord(recordingInfo)
+        
+        print("✅ Driving record saved: \(recordingInfo.filename)")
+    }
+    
+    // MARK: - Legacy method for simple recordings
+    private func saveRecordingMetadata(url: URL, coordinate: CLLocationCoordinate2D) {
+        let recordingInfo = RecordModel(
+            filename: url.lastPathComponent,
+            fileURL: url,
+            vin: "Simple Recording",
+            testExecutionId: "N/A",
+            tag: "Simple Test",
+            milesBefore: 0,
+            milesAfter: 0,
+            startCoordinate: coordinate,
+            endCoordinate: nil,
+            duration: recordingDuration
+        )
+        
+        // Save to UserDefaults for simple recordings
+        saveRecordingToUserDefaults(recordingInfo)
+        
+        print("✅ Recording metadata saved: \(recordingInfo.filename)")
     }
     
     // MARK: - Playback Functions
@@ -288,23 +333,26 @@ class AudioManager: NSObject, ObservableObject {
         return nil
     }
     
-    private func saveRecordingMetadata(url: URL, coordinate: CLLocationCoordinate2D) {
-        let recordingInfo = RecordModel(
-            filename: url.lastPathComponent,
-            fileURL: url,
-            coordinate: coordinate,
-            duration: recordingDuration
-        )
+    // MARK: - Data Persistence
+    func saveDrivingRecord(_ recording: RecordModel) {
+        // Get existing driving records
+        var records: [RecordModel] = []
+        if let data = UserDefaults.standard.data(forKey: "DrivingRecords"),
+           let existingRecords = try? JSONDecoder().decode([RecordModel].self, from: data) {
+            records = existingRecords
+        }
         
-        // Save to UserDefaults or Core Data for persistence
-        saveRecordingToUserDefaults(recordingInfo)
+        // Add new record
+        records.append(recording)
         
-        print("✅ Recording metadata saved: \(recordingInfo.filename)")
+        // Save to UserDefaults
+        if let data = try? JSONEncoder().encode(records) {
+            UserDefaults.standard.set(data, forKey: "DrivingRecords")
+        }
     }
     
     func saveRecordingToUserDefaults(_ recording: RecordModel) {
-        // This is a simple implementation using UserDefaults
-        // In a production app, you might want to use Core Data instead
+        // This is for simple recordings - keeping for backward compatibility
         var recordings = getRecordingsFromUserDefaults()
         recordings.append(recording)
         
@@ -319,6 +367,14 @@ class AudioManager: NSObject, ObservableObject {
             return []
         }
         return recordings
+    }
+    
+    func getDrivingRecords() -> [RecordModel] {
+        guard let data = UserDefaults.standard.data(forKey: "DrivingRecords"),
+              let records = try? JSONDecoder().decode([RecordModel].self, from: data) else {
+            return []
+        }
+        return records
     }
     
     // MARK: - Timer Management

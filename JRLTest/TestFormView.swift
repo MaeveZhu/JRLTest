@@ -14,6 +14,7 @@ struct TestFormView: View {
     @State private var showingMicrophonePermissionAlert = false
     @State private var showingPermissionAlert = false
     @State private var permissionAlertMessage = ""
+    @State private var startCoordinate: CLLocationCoordinate2D?
     
     @StateObject private var locationManager = LocationManager()
     
@@ -50,6 +51,9 @@ struct TestFormView: View {
             permissionButtons
         } message: {
             permissionMessage
+        }
+        .onAppear {
+            locationManager.requestLocationPermission()
         }
     }
     
@@ -170,6 +174,7 @@ struct TestFormView: View {
             tag: selectedTag,
             milesBefore: milesBefore,
             milesAfter: $milesAfter,
+            startCoordinate: startCoordinate,
             showingResultsView: $showingResultsView
         )
     }
@@ -221,6 +226,9 @@ struct TestFormView: View {
     // MARK: - Methods
     
     private func checkPermissionsAndStart() {
+        // 记录起始GPS坐标
+        startCoordinate = locationManager.currentLocation
+        
         // 检查位置权限
         if locationManager.locationStatus != .available {
             showingLocationPermissionAlert = true

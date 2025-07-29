@@ -103,7 +103,13 @@ struct SimpleVoiceRecordView: View {
     }
     
     private func loadRecordings() {
-        recordings = audioManager.getRecordingsFromUserDefaults()
+        // Load from DrivingRecords instead of old SavedRecordings
+        if let data = UserDefaults.standard.data(forKey: "DrivingRecords"),
+           let decodedRecordings = try? JSONDecoder().decode([RecordModel].self, from: data) {
+            recordings = decodedRecordings
+        } else {
+            recordings = []
+        }
         print("加载录音列表: \(recordings.count) 个录音文件")
     }
     
@@ -182,9 +188,20 @@ struct RecordingRowView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text("位置: \(recording.coordinateString)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Update to show VIN and test info if available, otherwise show coordinates
+                    if !recording.vin.isEmpty {
+                        Text("VIN: \(recording.vin)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text("测试: \(recording.tag)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("起始位置: \(recording.startCoordinateString)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     Text("时间: \(recording.formattedTimestamp)")
                         .font(.caption)

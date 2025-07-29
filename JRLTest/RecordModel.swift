@@ -5,16 +5,32 @@ struct RecordModel: Identifiable, Codable {
     let id: UUID
     let filename: String
     let fileURL: URL
-    let coordinate: CLLocationCoordinate2D
     let timestamp: Date
     let duration: TimeInterval
     let fileSize: String
     
-    init(filename: String, fileURL: URL, coordinate: CLLocationCoordinate2D, duration: TimeInterval = 0) {
+    // Form data
+    let vin: String
+    let testExecutionId: String
+    let tag: String
+    let milesBefore: Int
+    let milesAfter: Int
+    
+    // GPS coordinates
+    let startCoordinate: CLLocationCoordinate2D?
+    let endCoordinate: CLLocationCoordinate2D?
+    
+    init(filename: String, fileURL: URL, vin: String, testExecutionId: String, tag: String, milesBefore: Int, milesAfter: Int, startCoordinate: CLLocationCoordinate2D?, endCoordinate: CLLocationCoordinate2D?, duration: TimeInterval = 0) {
         self.id = UUID()
         self.filename = filename
         self.fileURL = fileURL
-        self.coordinate = coordinate
+        self.vin = vin
+        self.testExecutionId = testExecutionId
+        self.tag = tag
+        self.milesBefore = milesBefore
+        self.milesAfter = milesAfter
+        self.startCoordinate = startCoordinate
+        self.endCoordinate = endCoordinate
         self.timestamp = Date()
         self.duration = duration
         self.fileSize = RecordModel.getFileSize(url: fileURL)
@@ -34,8 +50,14 @@ struct RecordModel: Identifiable, Codable {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    var coordinateString: String {
-        return String(format: "%.6f, %.6f", coordinate.latitude, coordinate.longitude)
+    var startCoordinateString: String {
+        guard let coord = startCoordinate else { return "未记录" }
+        return String(format: "%.6f, %.6f", coord.latitude, coord.longitude)
+    }
+    
+    var endCoordinateString: String {
+        guard let coord = endCoordinate else { return "未记录" }
+        return String(format: "%.6f, %.6f", coord.latitude, coord.longitude)
     }
     
     // MARK: - File Size Helper
