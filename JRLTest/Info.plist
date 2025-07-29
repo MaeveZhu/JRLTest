@@ -8,6 +8,8 @@
 	<string>此应用需要访问位置信息来记录录音时的GPS坐标</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>此应用需要语音识别权限来检测"开始记录"等语音命令</string>
+	<key>NSSiriUsageDescription</key>
+	<string>此应用通过Siri支持语音控制录音功能</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -25,5 +27,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist> 

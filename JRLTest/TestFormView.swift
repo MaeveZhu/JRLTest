@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import CoreLocation
+import Speech
 
 struct TestFormView: View {
     @State private var vin = ""
@@ -167,13 +168,13 @@ struct TestFormView: View {
             .cornerRadius(10)
     }
     
+    // 在TestFormView中更新recordingView:
+
     private var recordingView: some View {
-        TestRecordingView(
+        AutoVoiceTestView(
             vin: vin,
             testExecutionId: testExecutionId,
             tag: selectedTag,
-            milesBefore: milesBefore,
-            milesAfter: $milesAfter,
             startCoordinate: startCoordinate,
             showingResultsView: $showingResultsView
         )
@@ -242,7 +243,34 @@ struct TestFormView: View {
             return
         }
         
-        // 所有权限都已获取，可以开始
+        // 检查语音识别权限
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        if speechStatus != .authorized {
+            SFSpeechRecognizer.requestAuthorization { status in
+                DispatchQueue.main.async {
+                    if status == .authorized {
+                        self.startVoiceControlledTest()
+                    } else {
+                        self.permissionAlertMessage = "语音识别权限被拒绝，无法进行语音控制测试"
+                        self.showingPermissionAlert = true
+                    }
+                }
+            }
+        } else {
+            startVoiceControlledTest()
+        }
+    }
+
+    private func startVoiceControlledTest() {
+        // Start voice-controlled test session
+        VoiceRecordingManager.shared.startTestSession(
+            vin: vin,
+            testExecutionId: testExecutionId,
+            tag: selectedTag,
+            startCoordinate: startCoordinate
+        )
+        
+        // Navigate to voice recording view
         showingRecordingView = true
     }
     

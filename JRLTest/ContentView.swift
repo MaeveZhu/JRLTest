@@ -24,7 +24,7 @@ struct ContentView: View {
                                 .font(.title2)
                                 .fontWeight(.semibold)
                         }
-                        .frame(width: 300, height: 200)
+                        .frame(width: 300, height: 150)
                         .background(Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(15)
@@ -38,8 +38,22 @@ struct ContentView: View {
                                 .font(.title2)
                                 .fontWeight(.semibold)
                         }
-                        .frame(width: 300, height: 200)
+                        .frame(width: 300, height: 150)
                         .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(15)
+                    }
+                    
+                    NavigationLink(destination: TestDashboardView()) {
+                        VStack(spacing: 10) {
+                            Image(systemName: "chart.bar.fill")
+                                .font(.system(size: 50))
+                            Text("测试仪表板")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(width: 300, height: 150)
+                        .background(Color.purple)
                         .foregroundColor(.white)
                         .cornerRadius(15)
                     }

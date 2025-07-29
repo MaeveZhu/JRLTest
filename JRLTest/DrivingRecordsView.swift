@@ -2,28 +2,30 @@ import SwiftUI
 import AVFoundation
 
 struct DrivingRecordsView: View {
-    @State private var records: [RecordModel] = []
-    @State private var showingRecordDetail = false
-    @State private var selectedRecord: RecordModel?
+    @State private var testSessions: [TestSession] = []
+    @State private var expandedVINs: Set<String> = []
+    @State private var showingSessionDetail = false
+    @State private var selectedSession: TestSession?
     @StateObject private var audioManager = AudioManager.shared
+    @StateObject private var voiceManager = VoiceRecordingManager.shared
     
     var body: some View {
         NavigationView {
             VStack {
-                if records.isEmpty {
+                if testSessions.isEmpty {
                     emptyStateView
                 } else {
-                    recordsList
+                    sessionsList
                 }
             }
             .navigationTitle("行车记录")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                loadRecords()
+                loadTestSessions()
             }
-            .sheet(isPresented: $showingRecordDetail) {
-                if let record = selectedRecord {
-                    RecordDetailView(record: record, audioManager: audioManager)
+            .sheet(isPresented: $showingSessionDetail) {
+                if let session = selectedSession {
+                    SessionDetailView(session: session, audioManager: audioManager)
                 }
             }
         }
@@ -35,152 +37,252 @@ struct DrivingRecordsView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.gray)
             
-            Text("暂无行车记录")
+            Text("暂无测试记录")
                 .font(.title2)
                 .foregroundColor(.gray)
             
-            Text("完成测试后记录将显示在这里")
+            Text("完成语音控制测试后记录将显示在这里")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private var recordsList: some View {
-        List(records) { record in
-            RecordRowView(record: record, audioManager: audioManager) {
-                selectedRecord = record
-                showingRecordDetail = true
+    private var sessionsList: some View {
+        List {
+            ForEach(groupedSessions.keys.sorted(), id: \.self) { vin in
+                VINSectionView(
+                    vin: vin,
+                    sessions: groupedSessions[vin] ?? [],
+                    isExpanded: expandedVINs.contains(vin),
+                    audioManager: audioManager,
+                    onToggle: {
+                        toggleVIN(vin)
+                    },
+                    onSessionTap: { session in
+                        selectedSession = session
+                        showingSessionDetail = true
+                    }
+                )
             }
+        }
+        .listStyle(PlainListStyle())
+    }
+    
+    private var groupedSessions: [String: [TestSession]] {
+        Dictionary(grouping: testSessions, by: { $0.vin })
+    }
+    
+    private func toggleVIN(_ vin: String) {
+        if expandedVINs.contains(vin) {
+            expandedVINs.remove(vin)
+        } else {
+            expandedVINs.insert(vin)
         }
     }
     
-    private func loadRecords() {
-        if let data = UserDefaults.standard.data(forKey: "DrivingRecords"),
-           let decodedRecords = try? JSONDecoder().decode([RecordModel].self, from: data) {
-            records = decodedRecords.sorted { $0.timestamp > $1.timestamp }
-        }
+    private func loadTestSessions() {
+        testSessions = voiceManager.getTestSessions().sorted { $0.startTime > $1.startTime }
     }
 }
 
-struct RecordRowView: View {
-    let record: RecordModel
+struct VINSectionView: View {
+    let vin: String
+    let sessions: [TestSession]
+    let isExpanded: Bool
+    let audioManager: AudioManager
+    let onToggle: () -> Void
+    let onSessionTap: (TestSession) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // VIN Header
+            Button(action: onToggle) {
+                HStack {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("VIN: \(vin)")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        Text("\(sessions.count) 次测试 • \(totalRecordings) 段录音")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Latest test date
+                    if let latestSession = sessions.first {
+                        Text(formatDate(latestSession.startTime))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expanded Content
+            if isExpanded {
+                VStack(spacing: 8) {
+                    ForEach(sessions, id: \.id) { session in
+                        SessionRowView(
+                            session: session,
+                            audioManager: audioManager,
+                            onTap: { onSessionTap(session) }
+                        )
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private var totalRecordings: Int {
+        sessions.reduce(0) { $0 + $1.recordingSegments.count }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
+struct SessionRowView: View {
+    let session: TestSession
     let audioManager: AudioManager
     let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(session.tag)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(formatTime(session.startTime))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("测试ID: \(session.testExecutionId)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text("\(session.recordingSegments.count) 段录音")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+                }
+                
+                // Recording segments preview
+                if !session.recordingSegments.isEmpty {
+                    HStack {
+                        ForEach(session.recordingSegments.prefix(3), id: \.id) { segment in
+                            RecordingSegmentButton(segment: segment, audioManager: audioManager)
+                        }
+                        
+                        if session.recordingSegments.count > 3 {
+                            Text("+\(session.recordingSegments.count - 3)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                }
+            }
+            .padding(12)
+            .background(Color.white)
+            .cornerRadius(8)
+            .shadow(radius: 1)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
+struct RecordingSegmentButton: View {
+    let segment: RecordingSegment
+    let audioManager: AudioManager
     @State private var isPlaying = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(record.tag)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                // Play button
-                Button(action: {
-                    if isPlaying {
-                        audioManager.stopPlayback()
-                    } else {
-                        _ = audioManager.startPlayback(url: record.fileURL)
-                    }
-                }) {
-                    Image(systemName: isPlaying ? "stop.circle.fill" : "play.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Text(record.formattedTimestamp)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        Button(action: {
+            if isPlaying {
+                audioManager.stopPlayback()
+            } else {
+                _ = audioManager.startPlayback(url: segment.fileURL)
             }
-            
-            HStack {
-                Text("VIN: \(record.vin)")
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: isPlaying ? "stop.circle.fill" : "play.circle.fill")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.blue)
                 
-                Spacer()
-                
-                Text("时长: \(record.formattedDuration)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("\(segment.segmentNumber)")
+                    .font(.caption2)
+                    .foregroundColor(.blue)
             }
-            
-            HStack {
-                Text("测试ID: \(record.testExecutionId)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Button("查看详情") {
-                    onTap()
-                }
-                .font(.caption)
-                .foregroundColor(.blue)
-            }
-            
-            // GPS coordinates preview
-            VStack(alignment: .leading, spacing: 4) {
-                Text("起始: \(record.startCoordinateString)")
-                    .font(.caption)
-                    .foregroundColor(.green)
-                Text("结束: \(record.endCoordinateString)")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(4)
         }
-        .padding(.vertical, 8)
+        .buttonStyle(PlainButtonStyle())
         .onReceive(audioManager.$isPlaying) { playing in
             isPlaying = playing
         }
     }
 }
 
-struct RecordDetailView: View {
-    let record: RecordModel
+struct SessionDetailView: View {
+    let session: TestSession
     let audioManager: AudioManager
     @Environment(\.dismiss) private var dismiss
-    @State private var isPlaying = false
-    @State private var playbackProgress: TimeInterval = 0
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Audio playback section
-                    audioPlaybackSection
+                    // Session Info
+                    sessionInfoSection
                     
-                    // 基本信息
-                    infoSection(title: "测试信息") {
-                        InfoRow(label: "测试类型", value: record.tag)
-                        InfoRow(label: "VIN", value: record.vin)
-                        InfoRow(label: "测试ID", value: record.testExecutionId)
-                        InfoRow(label: "测试时间", value: record.formattedTimestamp)
-                        InfoRow(label: "录音时长", value: record.formattedDuration)
-                    }
+                    // Recording Segments
+                    recordingSegmentsSection
                     
-                    // 里程信息
-                    infoSection(title: "里程信息") {
-                        InfoRow(label: "起始里程", value: "\(record.milesBefore) miles")
-                        InfoRow(label: "结束里程", value: "\(record.milesAfter) miles")
-                    }
-                    
-                    // GPS坐标 - 重点显示
-                    gpsCoordinatesSection
-                    
-                    // 文件信息
-                    infoSection(title: "文件信息") {
-                        InfoRow(label: "文件名", value: record.filename)
-                        InfoRow(label: "文件大小", value: record.fileSize)
+                    // GPS Coordinates
+                    if session.startCoordinate != nil || session.endCoordinate != nil {
+                        gpsSection
                     }
                 }
                 .padding()
             }
-            .navigationTitle("测试记录详情")
+            .navigationTitle("测试详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -191,120 +293,110 @@ struct RecordDetailView: View {
                 }
             }
         }
+    }
+    
+    private var sessionInfoSection: some View {
+        InfoSection(title: "测试信息") {
+            InfoRow(label: "VIN", value: session.vin)
+            InfoRow(label: "测试类型", value: session.tag)
+            InfoRow(label: "测试ID", value: session.testExecutionId)
+            InfoRow(label: "开始时间", value: formatDateTime(session.startTime))
+            if let endTime = session.endTime {
+                InfoRow(label: "结束时间", value: formatDateTime(endTime))
+            }
+            InfoRow(label: "录音段数", value: "\(session.recordingSegments.count) 段")
+        }
+    }
+    
+    private var recordingSegmentsSection: some View {
+        InfoSection(title: "录音片段") {
+            ForEach(session.recordingSegments, id: \.id) { segment in
+                RecordingSegmentDetailRow(segment: segment, audioManager: audioManager)
+            }
+        }
+    }
+    
+    private var gpsSection: some View {
+        InfoSection(title: "GPS坐标") {
+            if let startCoord = session.startCoordinate {
+                InfoRow(
+                    label: "起始位置",
+                    value: String(format: "%.6f, %.6f", startCoord.latitude, startCoord.longitude)
+                )
+            }
+            if let endCoord = session.endCoordinate {
+                InfoRow(
+                    label: "结束位置",
+                    value: String(format: "%.6f, %.6f", endCoord.latitude, endCoord.longitude)
+                )
+            }
+        }
+    }
+    
+    private func formatDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
+struct RecordingSegmentDetailRow: View {
+    let segment: RecordingSegment
+    let audioManager: AudioManager
+    @State private var isPlaying = false
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("片段 \(segment.segmentNumber)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Text("\(segment.formattedTime) • \(segment.formattedDuration)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                if isPlaying {
+                    audioManager.stopPlayback()
+                } else {
+                    _ = audioManager.startPlayback(url: segment.fileURL)
+                }
+            }) {
+                Image(systemName: isPlaying ? "stop.circle.fill" : "play.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.vertical, 4)
         .onReceive(audioManager.$isPlaying) { playing in
             isPlaying = playing
         }
-        .onReceive(audioManager.$playbackProgress) { progress in
-            playbackProgress = progress
-        }
+    }
+}
+
+struct InfoSection<Content: View>: View {
+    let title: String
+    let content: Content
+    
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
     }
     
-    private var audioPlaybackSection: some View {
-        VStack(spacing: 16) {
-            Text("录音回放")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(spacing: 12) {
-                // Play/Stop button
-                HStack {
-                    Button(action: {
-                        if isPlaying {
-                            audioManager.stopPlayback()
-                        } else {
-                            _ = audioManager.startPlayback(url: record.fileURL)
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: isPlaying ? "stop.fill" : "play.fill")
-                                .font(.title2)
-                            Text(isPlaying ? "停止播放" : "播放录音")
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(isPlaying ? Color.red : Color.blue)
-                        .cornerRadius(10)
-                    }
-                }
-                
-                // Progress display
-                if isPlaying {
-                    HStack {
-                        Text(audioManager.formatDuration(playbackProgress))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        Text(audioManager.formatDuration(audioManager.getTotalPlaybackTime()))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
-        }
-    }
-    
-    private var gpsCoordinatesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("GPS坐标")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(spacing: 12) {
-                // Start coordinates
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Circle()
-                            .fill(Color.green)
-                            .frame(width: 12, height: 12)
-                        Text("起始位置")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    }
-                    Text(record.startCoordinateString)
-                        .font(.system(.body, design: .monospaced))
-                        .padding(.leading, 20)
-                        .foregroundColor(.green)
-                }
-                
-                Divider()
-                
-                // End coordinates
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 12, height: 12)
-                        Text("结束位置")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    }
-                    Text(record.endCoordinateString)
-                        .font(.system(.body, design: .monospaced))
-                        .padding(.leading, 20)
-                        .foregroundColor(.red)
-                }
-            }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(12)
-        }
-    }
-    
-    private func infoSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.primary)
             
             VStack(spacing: 8) {
-                content()
+                content
             }
             .padding()
             .background(Color.gray.opacity(0.1))
@@ -313,6 +405,7 @@ struct RecordDetailView: View {
     }
 }
 
+// Keep the existing InfoRow struct
 struct InfoRow: View {
     let label: String
     let value: String

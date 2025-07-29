@@ -212,9 +212,6 @@ struct TestRecordingView: View {
         audioRecorder = nil
         isRecording = false
         
-        // 模拟更新里程
-        milesAfter = milesBefore + Int.random(in: 1...50)
-        
         // 保存记录
         if let url = recordingURL {
             saveRecord(fileURL: url)
