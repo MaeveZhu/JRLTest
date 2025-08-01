@@ -53,8 +53,6 @@ struct TestFormView: View {
                     .padding(.top, 20)
                 }
             }
-            .navigationTitle("Vehicle Test")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(isPresented: $showingRecordingView) {
             recordingView

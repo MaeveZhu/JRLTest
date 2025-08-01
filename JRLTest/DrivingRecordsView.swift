@@ -385,9 +385,6 @@ struct SessionDetailView: View {
                 segmentsList
                 Spacer()
             }
-            .padding(30)
-            .navigationTitle("Session Details")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {

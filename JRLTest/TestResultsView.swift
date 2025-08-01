@@ -26,7 +26,7 @@ struct TestResultsView: View {
                 abstractBackgroundElements
                 
                 ScrollView {
-                    VStack(spacing: 50) {
+                    VStack(spacing: 30) {
                         successIndicator
                         testSummarySection
                         recordingStatusSection
@@ -37,8 +37,7 @@ struct TestResultsView: View {
                     .padding(.bottom, 60)
                 }
             }
-            .navigationTitle("Test Results")
-            .navigationBarTitleDisplayMode(.inline)
+
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {
@@ -75,7 +74,7 @@ struct TestResultsView: View {
     }
     
     private var successIndicator: some View {
-        VStack(spacing: 25) {
+        VStack(spacing: 18) {
             // Success icon container
             ZStack {
                 Circle()
@@ -111,7 +110,7 @@ struct TestResultsView: View {
     }
     
     private var testSummarySection: some View {
-        VStack(alignment: .leading, spacing: 25) {
+        VStack(alignment: .leading, spacing: 18) {
             Text("Session Summary")
                 .font(.system(size: 20, weight: .light))
                 .foregroundColor(.black)
@@ -169,13 +168,13 @@ struct TestResultsView: View {
     }
     
     private var recordingStatusSection: some View {
-        VStack(alignment: .leading, spacing: 25) {
+        VStack(alignment: .leading, spacing: 18) {
             Text("Recording Status")
                 .font(.system(size: 20, weight: .light))
                 .foregroundColor(.black)
                 
             
-            VStack(spacing: 15) {
+            VStack(spacing: 10) {
                 statusRow(
                     icon: "mic",
                     title: "Voice Recording",
@@ -201,7 +200,7 @@ struct TestResultsView: View {
     }
     
     private func statusRow(icon: String, title: String, subtitle: String, isCompleted: Bool) -> some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 18) {
             // Icon container
             ZStack {
                 Rectangle()
@@ -253,12 +252,12 @@ struct TestResultsView: View {
     }
     
     private var actionButtonsSection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 18) {
             // Primary action
             Button(action: {
                 dismiss()
             }) {
-                HStack(spacing: 15) {
+                HStack(spacing: 10) {
                     Rectangle()
                         .fill(Color.white)
                         .frame(width: 2, height: 18)
@@ -289,7 +288,7 @@ struct TestResultsView: View {
                 // TODO: Navigate to test list
                 dismiss()
             }) {
-                HStack(spacing: 15) {
+                HStack(spacing: 10) {
                     Rectangle()
                         .fill(Color.black)
                         .frame(width: 2, height: 18)

@@ -47,8 +47,6 @@ struct TestDashboardView: View {
                     }
                 }
             }
-            .navigationTitle("Test Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear {
             loadTestData()

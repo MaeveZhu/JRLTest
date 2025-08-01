@@ -29,14 +29,14 @@ struct AutoVoiceTestView: View {
                 // Abstract background elements
                 abstractBackgroundElements
                 
-                VStack(spacing: 50) {
+                VStack(spacing: 30) {
                     headerSection
                     
-                    Spacer()
+                    Spacer(minLength: 10)
                     
                     statusIndicatorSection
                     
-                    Spacer()
+                    Spacer(minLength: 10)
                     
                     instructionsSection
                     
@@ -44,15 +44,13 @@ struct AutoVoiceTestView: View {
                         recordingSegmentsSection
                     }
                     
-                    Spacer()
+                    Spacer(minLength: 10)
                     
                     endTestButton
                 }
                 .padding(.horizontal, 40)
-                .padding(.vertical, 40)
+                .padding(.vertical, 20)
             }
-            .navigationTitle("Voice Control Test")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear {
             startAutoVoiceTest()
@@ -84,8 +82,8 @@ struct AutoVoiceTestView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 25) {
-            VStack(spacing: 15) {
+        VStack(spacing: 15) {
+            VStack(spacing: 10) {
                 Text("Voice Control Session")
                     .font(.system(size: 28, weight: .ultraLight))
                     .foregroundColor(.black)
@@ -100,7 +98,7 @@ struct AutoVoiceTestView: View {
                 sessionInfoRow(label: "Test Type", value: tag)
                 sessionInfoRow(label: "Session ID", value: testExecutionId)
             }
-            .padding(.vertical, 20)
+            .padding(.vertical, 15)
             .padding(.horizontal, 25)
             .background(Color.white)
             .overlay(
@@ -125,10 +123,10 @@ struct AutoVoiceTestView: View {
     }
     
     private var statusIndicatorSection: some View {
-        VStack(spacing: 40) {
+        VStack(spacing: 15) {
             // Listening status
-            VStack(spacing: 20) {
-                HStack(spacing: 15) {
+            VStack(spacing: 8) {
+                HStack(spacing: 5) {
                     Circle()
                         .fill(voiceManager.isListening ? Color.black.opacity(0.6) : Color.gray.opacity(0.3))
                         .frame(width: 8, height: 8)
@@ -148,7 +146,7 @@ struct AutoVoiceTestView: View {
             
             // Recording status
             if voiceManager.isRecording {
-                VStack(spacing: 25) {
+                VStack(spacing: 20) {
                     // Recording indicator
                     ZStack {
                         Circle()
@@ -162,7 +160,7 @@ struct AutoVoiceTestView: View {
                             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: recordingPulse)
                     }
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         Text("Recording Segment \(voiceManager.recordingSegments.count + 1)")
                             .font(.system(size: 20, weight: .light))
                             .foregroundColor(.black)
@@ -178,17 +176,17 @@ struct AutoVoiceTestView: View {
     }
     
     private var instructionsSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Voice Commands")
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
-            VStack(spacing: 15) {
+            VStack(spacing: 12) {
                 commandRow(command: "开始录音", description: "Begin recording audio segment")
                 commandRow(command: "停止录音", description: "End current recording")
                 commandRow(command: "结束测试", description: "Complete the test session")
             }
-            .padding(.vertical, 25)
+            .padding(.vertical, 20)
             .padding(.horizontal, 25)
             .background(Color.white)
             .overlay(
@@ -219,17 +217,17 @@ struct AutoVoiceTestView: View {
     }
     
     private var recordingSegmentsSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 15) {
             Text("Recorded Segments")
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 ForEach(Array(voiceManager.recordingSegments.enumerated()), id: \.offset) { index, segment in
                     segmentRow(index: index + 1, segment: segment)
                 }
             }
-            .padding(.vertical, 20)
+            .padding(.vertical, 15)
             .padding(.horizontal, 25)
             .background(Color.white)
             .overlay(
@@ -265,7 +263,7 @@ struct AutoVoiceTestView: View {
             HStack(spacing: 15) {
                 Rectangle()
                     .fill(Color.white)
-                    .frame(width: 2, height: 18)
+                    .frame(width: 2, height: 15)
                 
                 Text("Complete Test Session")
                     .font(.system(size: 18, weight: .light))
