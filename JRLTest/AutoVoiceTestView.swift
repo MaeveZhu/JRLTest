@@ -11,192 +11,323 @@ struct AutoVoiceTestView: View {
     @StateObject private var voiceManager = VoiceRecordingManager.shared
     @StateObject private var locationManager = LocationManager()
     @Environment(\.dismiss) private var dismiss
+    @State private var animationPhase: CGFloat = 0
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var recordingPulse: CGFloat = 1.0
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                headerSection
+            ZStack {
+                // Background with subtle gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.01)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                Spacer()
+                // Abstract background elements
+                abstractBackgroundElements
                 
-                statusIndicator
-                
-                Spacer()
-                
-                instructionsSection
-                
-                if !voiceManager.recordingSegments.isEmpty {
-                    recordingSegmentsSection
+                VStack(spacing: 50) {
+                    headerSection
+                    
+                    Spacer()
+                    
+                    statusIndicatorSection
+                    
+                    Spacer()
+                    
+                    instructionsSection
+                    
+                    if !voiceManager.recordingSegments.isEmpty {
+                        recordingSegmentsSection
+                    }
+                    
+                    Spacer()
+                    
+                    endTestButton
                 }
-                
-                Spacer()
-                
-                endTestButton
+                .padding(.horizontal, 40)
+                .padding(.vertical, 40)
             }
-            .padding()
-            .navigationTitle("语音控制测试")
+            .navigationTitle("Voice Control Test")
             .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear {
             startAutoVoiceTest()
+            startAnimations()
         }
         .onDisappear {
             voiceManager.stopListening()
         }
     }
     
-    private var headerSection: some View {
-        VStack(spacing: 8) {
-            Text("自动语音测试已启动")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.blue)
+    private var abstractBackgroundElements: some View {
+        ZStack {
+            // Floating geometric shapes
+            Circle()
+                .stroke(Color.gray.opacity(0.02), lineWidth: 1)
+                .frame(width: 400, height: 400)
+                .offset(x: -150, y: -100)
+                .rotationEffect(.degrees(animationPhase * 0.15))
+                .animation(.linear(duration: 60).repeatForever(autoreverses: false), value: animationPhase)
             
-            VStack(spacing: 4) {
-                Text("VIN: \(vin)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                Text("测试类型: \(tag)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
+            Rectangle()
+                .fill(Color.black.opacity(0.01))
+                .frame(width: 200, height: 3)
+                .rotationEffect(.degrees(25))
+                .offset(x: 180, y: 200)
+                .scaleEffect(pulseScale)
+                .animation(.easeInOut(duration: 4).repeatForever(autoreverses: true), value: pulseScale)
         }
     }
     
-    private var statusIndicator: some View {
-        VStack(spacing: 20) {
-            // 监听状态
-            HStack {
-                Circle()
-                    .fill(voiceManager.isListening ? Color.green : Color.gray)
-                    .frame(width: 16, height: 16)
+    private var headerSection: some View {
+        VStack(spacing: 25) {
+            VStack(spacing: 15) {
+                Text("Voice Control Session")
+                    .font(.system(size: 28, weight: .ultraLight))
+                    .foregroundColor(.black)
                 
-                Text(voiceManager.isListening ? "🎤 正在监听语音命令..." : "⏸️ 语音监听已暂停")
-                    .font(.headline)
-                    .foregroundColor(voiceManager.isListening ? .green : .gray)
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 100, height: 1)
             }
             
-            // 录音状态
+            VStack(spacing: 12) {
+                sessionInfoRow(label: "Vehicle ID", value: vin)
+                sessionInfoRow(label: "Test Type", value: tag)
+                sessionInfoRow(label: "Session ID", value: testExecutionId)
+            }
+            .padding(.vertical, 20)
+            .padding(.horizontal, 25)
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func sessionInfoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12, weight: .light))
+                .foregroundColor(.gray)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 12, weight: .light, design: .monospaced))
+                .foregroundColor(.black)
+        }
+    }
+    
+    private var statusIndicatorSection: some View {
+        VStack(spacing: 40) {
+            // Listening status
+            VStack(spacing: 20) {
+                HStack(spacing: 15) {
+                    Circle()
+                        .fill(voiceManager.isListening ? Color.black.opacity(0.6) : Color.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(voiceManager.isListening ? pulseScale : 1.0)
+                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
+                    
+                    Text(voiceManager.isListening ? "Voice Control Active" : "Voice Control Paused")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(.black)
+                }
+                
+                Text(voiceManager.isListening ? "System is monitoring for voice commands" : "Voice monitoring is currently paused")
+                    .font(.system(size: 14, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+            }
+            
+            // Recording status
             if voiceManager.isRecording {
-                VStack(spacing: 10) {
-                    HStack {
-                        Image(systemName: "record.circle.fill")
-                            .foregroundColor(.red)
-                            .scaleEffect(1.5)
-                            .animation(.easeInOut(duration: 1).repeatForever(), value: voiceManager.isRecording)
+                VStack(spacing: 25) {
+                    // Recording indicator
+                    ZStack {
+                        Circle()
+                            .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                            .frame(width: 120, height: 120)
                         
-                        Text("正在录音片段 \(voiceManager.recordingSegments.count + 1)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.red)
+                        Circle()
+                            .fill(Color.black.opacity(0.8))
+                            .frame(width: 20, height: 20)
+                            .scaleEffect(recordingPulse)
+                            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: recordingPulse)
                     }
                     
-                    Text("保持3秒静音将自动停止录音")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(spacing: 8) {
+                        Text("Recording Segment \(voiceManager.recordingSegments.count + 1)")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.black)
+                        
+                        Text("Maintain 3 seconds of silence to automatically stop")
+                            .font(.system(size: 12, weight: .ultraLight))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                    }
                 }
             }
         }
     }
     
     private var instructionsSection: some View {
-        VStack(spacing: 15) {
-            Text("说出以下任一命令开始录音:")
-                .font(.headline)
-                .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Voice Commands")
+                .font(.system(size: 18, weight: .light))
+                .foregroundColor(.black)
             
-            VStack(spacing: 8) {
-                TriggerWordRow(text: "\"Hey Siri\"", icon: "mic.fill")
-                TriggerWordRow(text: "\"开始记录\"", icon: "record.circle")
-                TriggerWordRow(text: "\"开始录音\"", icon: "waveform")
+            VStack(spacing: 15) {
+                commandRow(command: "开始录音", description: "Begin recording audio segment")
+                commandRow(command: "停止录音", description: "End current recording")
+                commandRow(command: "结束测试", description: "Complete the test session")
+            }
+            .padding(.vertical, 25)
+            .padding(.horizontal, 25)
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func commandRow(command: String, description: String) -> some View {
+        HStack(spacing: 15) {
+            Rectangle()
+                .fill(Color.black.opacity(0.1))
+                .frame(width: 3, height: 25)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(command)
+                    .font(.system(size: 14, weight: .light, design: .monospaced))
+                    .foregroundColor(.black)
+                
+                Text(description)
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
             }
             
-            Text("• 每次命令创建一个新的录音片段\n• 3秒静音自动结束当前片段\n• 可以多次录音")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            Spacer()
         }
-        .padding()
-        .background(Color.blue.opacity(0.1))
-        .cornerRadius(12)
     }
     
     private var recordingSegmentsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("已录制片段: \(voiceManager.recordingSegments.count)")
-                .font(.headline)
-                .foregroundColor(.green)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Recorded Segments")
+                .font(.system(size: 18, weight: .light))
+                .foregroundColor(.black)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(voiceManager.recordingSegments, id: \.id) { segment in
-                        VStack(spacing: 4) {
-                            Text("片段 \(segment.segmentNumber)")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                            
-                            Text(segment.formattedDuration)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(8)
-                        .background(Color.green.opacity(0.2))
-                        .cornerRadius(8)
-                    }
+            VStack(spacing: 12) {
+                ForEach(Array(voiceManager.recordingSegments.enumerated()), id: \.offset) { index, segment in
+                    segmentRow(index: index + 1, segment: segment)
                 }
-                .padding(.horizontal)
             }
+            .padding(.vertical, 20)
+            .padding(.horizontal, 25)
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+            )
         }
+    }
+    
+    private func segmentRow(index: Int, segment: RecordingSegment) -> some View {
+        HStack(spacing: 15) {
+            Circle()
+                .fill(Color.black.opacity(0.6))
+                .frame(width: 6, height: 6)
+            
+            Text("Segment \(index)")
+                .font(.system(size: 14, weight: .light))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            Text(formatDuration(segment.duration))
+                .font(.system(size: 12, weight: .light, design: .monospaced))
+                .foregroundColor(.gray)
+        }
+        .padding(.vertical, 8)
     }
     
     private var endTestButton: some View {
-        Button("结束测试") {
-            endVoiceTest()
+        Button(action: {
+            endTest()
+        }) {
+            HStack(spacing: 15) {
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 2, height: 18)
+                
+                Text("Complete Test Session")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .ultraLight))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 30)
+            .padding(.vertical, 20)
+            .background(Color.black)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+            )
         }
-        .font(.headline)
-        .foregroundColor(.white)
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(Color.orange)
-        .cornerRadius(12)
-        .padding(.horizontal)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func startAnimations() {
+        withAnimation {
+            pulseScale = 1.3
+            recordingPulse = 1.5
+        }
+        
+        withAnimation(.linear(duration: 60).repeatForever(autoreverses: false)) {
+            animationPhase = 360
+        }
+    }
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
     
     private func startAutoVoiceTest() {
-        print("🚀 启动自动语音测试...")
+        // Start the test session with initial parameters
         voiceManager.startTestSession(
             vin: vin,
             testExecutionId: testExecutionId,
             tag: tag,
             startCoordinate: startCoordinate
         )
+        voiceManager.startListening()
     }
     
-    private func endVoiceTest() {
+    private func endTest() {
+        voiceManager.stopListening()
+        
+        // Get the current location as end coordinate
         let endCoordinate = locationManager.currentLocation
+        
+        // End the test session with the end coordinate
         let _ = voiceManager.endTestSession(endCoordinate: endCoordinate)
         
-        showingResultsView = true
-        dismiss()
-    }
-}
-
-struct TriggerWordRow: View {
-    let text: String
-    let icon: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(.blue)
-                .frame(width: 20)
-            
-            Text(text)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.blue)
-            
-            Spacer()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            showingResultsView = true
+            dismiss()
         }
     }
 }
@@ -204,9 +335,9 @@ struct TriggerWordRow: View {
 #Preview {
     AutoVoiceTestView(
         vin: "TEST123",
-        testExecutionId: "EXEC001", 
+        testExecutionId: "EXEC001",
         tag: "Engine Test",
-        startCoordinate: nil,
+        startCoordinate: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
         showingResultsView: .constant(false)
     )
 } 
