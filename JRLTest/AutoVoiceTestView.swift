@@ -29,14 +29,14 @@ struct AutoVoiceTestView: View {
                 // Abstract background elements
                 abstractBackgroundElements
                 
-                VStack(spacing: 30) {
+                VStack(spacing: 5) {
                     headerSection
                     
-                    Spacer(minLength: 10)
+                    Spacer(minLength: 5)
                     
                     statusIndicatorSection
                     
-                    Spacer(minLength: 10)
+                    Spacer(minLength: 5)
                     
                     instructionsSection
                     
@@ -44,12 +44,12 @@ struct AutoVoiceTestView: View {
                         recordingSegmentsSection
                     }
                     
-                    Spacer(minLength: 10)
+                    controlButtonsSection
                     
                     endTestButton
                 }
-                .padding(.horizontal, 40)
-                .padding(.vertical, 20)
+                .padding(.horizontal, 30)
+                .padding(.vertical, 15)
             }
         }
         .onAppear {
@@ -68,7 +68,7 @@ struct AutoVoiceTestView: View {
             // Floating geometric shapes
             Circle()
                 .stroke(Color.gray.opacity(0.02), lineWidth: 1)
-                .frame(width: 400, height: 400)
+                .frame(width: 400, height: 200)
                 .offset(x: -150, y: -100)
                 .rotationEffect(.degrees(animationPhase * 0.15))
                 .animation(.linear(duration: 60).repeatForever(autoreverses: false), value: animationPhase)
@@ -84,9 +84,9 @@ struct AutoVoiceTestView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 15) {
+        VStack(spacing: 7) {
             VStack(spacing: 10) {
-                Text("Voice Control Session")
+                Text("语音控制测试")
                     .font(.system(size: 28, weight: .ultraLight))
                     .foregroundColor(.black)
                 
@@ -95,13 +95,13 @@ struct AutoVoiceTestView: View {
                     .frame(width: 100, height: 1)
             }
             
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 sessionInfoRow(label: "Vehicle ID", value: vin)
                 sessionInfoRow(label: "Test Type", value: tag)
                 sessionInfoRow(label: "Session ID", value: testExecutionId)
             }
-            .padding(.vertical, 15)
-            .padding(.horizontal, 25)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
             .background(Color.white)
             .overlay(
                 Rectangle()
@@ -125,9 +125,9 @@ struct AutoVoiceTestView: View {
     }
     
     private var statusIndicatorSection: some View {
-        VStack(spacing: 15) {
+        VStack(spacing: 7) {
             // Listening status
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 HStack(spacing: 5) {
                     Circle()
                         .fill(audioManager.isListening ? Color.black.opacity(0.6) : Color.gray.opacity(0.3))
@@ -136,39 +136,39 @@ struct AutoVoiceTestView: View {
                         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
                     
                     Text(audioManager.isListening ? "Voice Control Active" : "Voice Control Paused")
-                        .font(.system(size: 18, weight: .light))
+                        .font(.system(size: 16, weight: .light))
                         .foregroundColor(.black)
                 }
                 
                 Text(audioManager.isListening ? "System is monitoring for voice commands" : "Voice monitoring is currently paused")
-                    .font(.system(size: 14, weight: .ultraLight))
+                    .font(.system(size: 12, weight: .ultraLight))
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }
             
             // Recording status
             if audioManager.isRecording {
-                VStack(spacing: 20) {
+                VStack(spacing: 12) {
                     // Recording indicator
                     ZStack {
                         Circle()
                             .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-                            .frame(width: 120, height: 120)
+                            .frame(width: 80, height: 60)
                         
                         Circle()
                             .fill(Color.black.opacity(0.8))
-                            .frame(width: 20, height: 20)
+                            .frame(width: 16, height: 16)
                             .scaleEffect(recordingPulse)
                             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: recordingPulse)
                     }
                     
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Text("Recording Segment \(audioManager.recordingSegments.count + 1)")
-                            .font(.system(size: 20, weight: .light))
+                            .font(.system(size: 16, weight: .light))
                             .foregroundColor(.black)
                         
-                        Text("Maintain 3 seconds of silence to automatically stop")
-                            .font(.system(size: 12, weight: .ultraLight))
+                        Text("5秒静音或3分钟超时自动停止")
+                            .font(.system(size: 10, weight: .ultraLight))
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                     }
@@ -183,13 +183,12 @@ struct AutoVoiceTestView: View {
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
-            VStack(spacing: 12) {
-                commandRow(command: "Hey Siri, report driving test in JRLTest", description: "Start test session with voice and location")
-                commandRow(command: "Hey Siri, start driving test audio in JRLTest", description: "Begin capturing voice and data")
-                commandRow(command: "Hey Siri, stop driving test audio in JRLTest", description: "Stop current audio capture")
+            VStack(spacing: 8) {
+                commandRow(command: "Hey Siri, start driving test audio in JRLTest", description: "开始录音并捕获位置信息 (最多3分钟)")
+                commandRow(command: "5秒静音或3分钟超时", description: "自动停止录音并返回监听模式")
             }
-            .padding(.vertical, 20)
-            .padding(.horizontal, 25)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
             .background(Color.white)
             .overlay(
                 Rectangle()
@@ -199,7 +198,7 @@ struct AutoVoiceTestView: View {
     }
     
     private func commandRow(command: String, description: String) -> some View {
-        HStack(spacing: 15) {
+        HStack(spacing: 7) {
             Rectangle()
                 .fill(Color.black.opacity(0.1))
                 .frame(width: 3, height: 25)
@@ -219,18 +218,18 @@ struct AutoVoiceTestView: View {
     }
     
     private var recordingSegmentsSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: 7) {
             Text("Recorded Segments")
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
-            VStack(spacing: 10) {
+            VStack(spacing: 6) {
                 ForEach(Array(audioManager.recordingSegments.enumerated()), id: \.offset) { index, segment in
                     segmentRow(index: index + 1, segment: segment)
                 }
             }
-            .padding(.vertical, 15)
-            .padding(.horizontal, 25)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
             .background(Color.white)
             .overlay(
                 Rectangle()
@@ -240,7 +239,7 @@ struct AutoVoiceTestView: View {
     }
     
     private func segmentRow(index: Int, segment: RecordingSegment) -> some View {
-        HStack(spacing: 15) {
+        HStack(spacing: 7) {
             Circle()
                 .fill(Color.black.opacity(0.6))
                 .frame(width: 6, height: 6)
@@ -255,19 +254,57 @@ struct AutoVoiceTestView: View {
                 .font(.system(size: 12, weight: .light, design: .monospaced))
                 .foregroundColor(.gray)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
+    }
+    
+    private var controlButtonsSection: some View {
+        VStack(spacing: 0) {
+            // Start Listening Button
+            Button(action: {
+                startListening()
+            }) {
+                HStack(spacing: 7) {
+                    Image(systemName: "ear")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(.white)
+                    
+                    Text("开始监听")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 25)
+                .padding(.vertical, 15)
+                .background(audioManager.isListening ? Color.gray : Color.blue)
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(audioManager.isRecording)
+            
+            // Status indicator
+            if audioManager.isListening {
+                Text("正在监听语音命令...")
+                    .font(.system(size: 14, weight: .ultraLight))
+                    .foregroundColor(.green)
+                    .padding(.top, 5)
+            }
+        }
     }
     
     private var endTestButton: some View {
         Button(action: {
             endTest()
         }) {
-            HStack(spacing: 15) {
+            HStack(spacing: 3) {
                 Rectangle()
                     .fill(Color.white)
-                    .frame(width: 2, height: 15)
+                    .frame(width: 2, height: 10)
                 
-                Text("Complete Test Session")
+                Text("结束测试")
                     .font(.system(size: 18, weight: .light))
                     .foregroundColor(.white)
                 
@@ -277,8 +314,7 @@ struct AutoVoiceTestView: View {
                     .font(.system(size: 14, weight: .ultraLight))
                     .foregroundColor(.white)
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 20)
+                            .padding(.horizontal, 25)
             .background(Color.black)
             .overlay(
                 Rectangle()
@@ -313,7 +349,12 @@ struct AutoVoiceTestView: View {
             tag: tag,
             startCoordinate: startCoordinate
         )
+        // Don't start listening automatically - user must click button
+    }
+    
+    private func startListening() {
         audioManager.startListening()
+        print("🎤 AutoVoiceTestView: Started listening for voice commands")
     }
     
     private func endTest() {
@@ -406,10 +447,10 @@ struct AutoVoiceTestView: View {
         print("🎤 AutoVoiceTestView: SiriStartRecording notification received!")
         print("🎤 AutoVoiceTestView: Current recording state - isRecording: \(audioManager.isRecording)")
         
-        // Start recording if not already recording
+        // Start recording with coordinate if not already recording
         if !audioManager.isRecording {
-            print("🎤 AutoVoiceTestView: Calling audioManager.startRecording()")
-            audioManager.startRecording()
+            print("🎤 AutoVoiceTestView: Calling audioManager.startRecordingWithCoordinate()")
+            audioManager.startRecordingWithCoordinate()
             print("✅ AutoVoiceTestView: Recording started via voice command")
         } else {
             print("ℹ️ AutoVoiceTestView: Recording is already active")

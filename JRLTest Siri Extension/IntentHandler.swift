@@ -57,85 +57,25 @@ extension CLLocationCoordinate2D: Codable {
     }
 }
 
-// MARK: - App Intent Definition
-struct StartDrivingTestIntent: AppIntent {
-    static var title: LocalizedStringResource = "Start Driving Test"
-    static var description = IntentDescription("Starts a new driving test session")
+// MARK: - Single App Intent Definition
+struct StartDrivingTestAudioIntent: AppIntent {
+    static var title: LocalizedStringResource = "Start Driving Test Audio"
+    static var description = IntentDescription("Starts voice and location recording for driving test")
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Get current location
-        let currentLocation = await getCurrentLocation()
+        print("🎤 StartDrivingTestAudioIntent: perform() called")
         
-        // Create test session (using proper TestSession structure)
-        let testSession = TestSession(
-            vin: "SIRI_TEST",
-            testExecutionId: UUID().uuidString,
-            tag: "SiriKit Test",
-            startCoordinate: currentLocation,
-            startTime: Date()
-        )
-        
-        // Post notification to update UI in main app and start recording
+        // Post notification to start recording with coordinate
         DispatchQueue.main.async {
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SiriDrivingTestStarted"),
-                object: testSession
-            )
-        }
-        
-        return .result(dialog: "Driving test started. Recording location and voice data.")
-    }
-    
-    private func getCurrentLocation() async -> CLLocationCoordinate2D? {
-        return await withCheckedContinuation { continuation in
-            let locationManager = CLLocationManager()
-            continuation.resume(returning: locationManager.location?.coordinate)
-        }
-    }
-}
-
-// MARK: - Recording Intent
-struct StartRecordingIntent: AppIntent {
-    static var title: LocalizedStringResource = "Start Recording"
-    static var description = IntentDescription("Starts voice and location recording")
-    static var openAppWhenRun: Bool = true
-    
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        print("🎤 StartRecordingIntent: perform() called")
-        
-        // Post notification to start recording
-        DispatchQueue.main.async {
-            print("🎤 StartRecordingIntent: Posting SiriStartRecording notification")
+            print("🎤 StartDrivingTestAudioIntent: Posting SiriStartRecording notification")
             NotificationCenter.default.post(
                 name: NSNotification.Name("SiriStartRecording"),
                 object: nil
             )
         }
         
-        return .result(dialog: "Driving test audio capture started")
-    }
-}
-
-// MARK: - Stop Recording Intent
-struct StopRecordingIntent: AppIntent {
-    static var title: LocalizedStringResource = "Stop Recording"
-    static var description = IntentDescription("Stops current recording")
-    static var openAppWhenRun: Bool = true
-    
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        print("🛑 StopRecordingIntent: perform() called")
-        
-        // Post notification to stop recording
-        DispatchQueue.main.async {
-            print("🛑 StopRecordingIntent: Posting SiriStopRecording notification")
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SiriStopRecording"),
-                object: nil
-            )
-        }
-        
-        return .result(dialog: "Driving test audio capture stopped")
+        return .result(dialog: "Driving test audio recording started")
     }
 }
 
@@ -144,35 +84,14 @@ struct DrivingTestShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         return [
             AppShortcut(
-                intent: StartDrivingTestIntent(),
-                phrases: [
-                    "Report driving test in \(.applicationName)",
-                    "Start driving test in \(.applicationName)",
-                    "Begin test with \(.applicationName)",
-                    "Start test using \(.applicationName)"
-                ],
-                shortTitle: "Start Test",
-                systemImageName: "car"
-            ),
-            AppShortcut(
-                intent: StartRecordingIntent(),
+                intent: StartDrivingTestAudioIntent(),
                 phrases: [
                     "Start driving test audio in \(.applicationName)",
                     "Begin test session audio in \(.applicationName)",
                     "Capture driving data in \(.applicationName)"
                 ],
-                shortTitle: "Start Recording",
+                shortTitle: "Start Audio Recording",
                 systemImageName: "record.circle"
-            ),
-            AppShortcut(
-                intent: StopRecordingIntent(),
-                phrases: [
-                    "Stop driving test audio in \(.applicationName)",
-                    "End test session audio in \(.applicationName)",
-                    "Stop capturing driving data in \(.applicationName)"
-                ],
-                shortTitle: "Stop Recording",
-                systemImageName: "stop.circle"
             )
         ]
     }
