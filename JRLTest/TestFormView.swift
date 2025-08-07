@@ -4,10 +4,10 @@ import CoreLocation
 import Speech
 
 struct TestFormView: View {
-    @State private var sectionA = "Operator CDSID"
-    @State private var sectionB = "Driver CDSID"
-    @State private var sectionC = "Test Execution"
-    @State private var sectionD = "Test Procedure"
+    @State private var sectionA = ""
+    @State private var sectionB = ""
+    @State private var sectionC = ""
+    @State private var sectionD = ""
     @State private var selectedSectionE = "Test Type"
     @State private var sectionF = 1
     @State private var showingRecordingView = false
@@ -140,7 +140,7 @@ struct TestFormView: View {
     
     private var sectionAInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Section A")
+            Text("Operator CDSID")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -154,7 +154,7 @@ struct TestFormView: View {
                             .stroke(sectionA.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
                     )
                 
-                TextField("Enter Section A", text: $sectionA)
+                TextField("Enter Operator CDSID", text: $sectionA)
                     .font(.system(size: 16, weight: .light, design: .monospaced))
                     .foregroundColor(.black)
                     .padding(.horizontal, 20)
