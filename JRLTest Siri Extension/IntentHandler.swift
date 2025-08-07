@@ -1,125 +1,69 @@
 //
-//  JRLTestApp.swift
-//  JRLTest
+//  IntentHandler.swift
+//  JRLTest Siri Extension
 //
-//  Created by whosyihan on 7/25/25.
+//  Created by whosyihan on 8/4/25.
 //
 
-import SwiftUI
 import AppIntents
 import CoreLocation
 
-/**
- * JRLTestApp - Main application entry point
- * BEHAVIOR:
- * - Initializes the SwiftUI app lifecycle
- * - Sets up global crash prevention mechanisms
- * - Manages app state transitions
- * - Handles permission management on app activation
- * EXCEPTIONS:
- * - Global exception handler may not catch all crashes
- * - Signal handlers may not work in all scenarios
- * - Permission checks may fail on app activation
- * DEPENDENCIES:
- * - Requires SwiftUI framework
- * - Uses PermissionManager for permission handling
- * - Requires system signal handling capabilities
- */
-@main
-struct JRLTestApp: App {
-    @StateObject private var permissionManager = PermissionManager.shared
+// MARK: - Test Session Model (shared with main app)
+struct TestSession: Identifiable, Codable {
+    let id = UUID()
+    let vin: String
+    let testExecutionId: String
+    let tag: String
+    let startCoordinate: CLLocationCoordinate2D?
+    var endCoordinate: CLLocationCoordinate2D?
+    let startTime: Date
+    var endTime: Date?
+    var recordingSegments: [RecordingSegment] = []
+}
+
+struct RecordingSegment: Identifiable, Codable {
+    let id: UUID
+    let segmentNumber: Int
+    let fileName: String
+    let fileURL: URL
+    let startTime: Date
+    let endTime: Date
+    let vin: String
+    let testExecutionId: String
+    let tag: String
     
-    init() {
-        // Set up crash prevention
-        setupCrashPrevention()
-        
-        // Register App Shortcuts for Siri
-        DrivingTestShortcuts.updateAppShortcutParameters()
-        print("🚀 JRLTest app initialized with App Intents registered")
-    }
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    // Handle app becoming active
-                    handleAppBecameActive()
-                    
-                    // Re-register shortcuts when app becomes active
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        DrivingTestShortcuts.updateAppShortcutParameters()
-                        print("🔄 App shortcuts re-registered on app activation")
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SiriDrivingTestStarted"))) { notification in
-                    // Handle Siri-initiated driving test
-                    handleSiriDrivingTestStarted(notification)
-                }
-        }
-    }
-    
-    /**
-     * BEHAVIOR: Sets up global exception and signal handlers for crash prevention
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
-    private func setupCrashPrevention() {
-        // Set up global exception handling
-        NSSetUncaughtExceptionHandler { exception in
-            print("Uncaught exception: \(exception)")
-            print("Stack trace: \(exception.callStackSymbols)")
-        }
-        
-        // Set up signal handling for abort signals
-        signal(SIGABRT) { signal in
-            print("Received SIGABRT signal: \(signal)")
-        }
-        
-        signal(SIGSEGV) { signal in
-            print("Received SIGSEGV signal: \(signal)")
-        }
-    }
-    
-    /**
-     * BEHAVIOR: Handles app activation by re-checking location permissions
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
-    private func handleAppBecameActive() {
-        // Re-check permissions when app becomes active
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            permissionManager.checkLocationPermission()
-        }
-    }
-    
-    /**
-     * BEHAVIOR: Handles Siri-initiated driving test session
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: notification - The notification containing test session data
-     */
-    private func handleSiriDrivingTestStarted(_ notification: Notification) {
-        print("🎤 Siri driving test started!")
-        if let testSession = notification.object {
-            print("Test session: \(testSession)")
-            // You can navigate to a specific view or update UI here
-        }
+    var duration: TimeInterval {
+        return endTime.timeIntervalSince(startTime)
     }
 }
 
-// MARK: - App Intents (moved from Siri Extension for proper registration)
+// MARK: - CLLocationCoordinate2D Codable Extension
+extension CLLocationCoordinate2D: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let latitude = try container.decode(Double.self, forKey: .latitude)
+        let longitude = try container.decode(Double.self, forKey: .longitude)
+        self.init(latitude: latitude, longitude: longitude)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(latitude, forKey: .latitude)
+        try container.encode(longitude, forKey: .longitude)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case latitude, longitude
+    }
+}
 
-// MARK: - App Intent Definitions
+// MARK: - App Intent Definition
 struct StartDrivingTestIntent: AppIntent {
     static var title: LocalizedStringResource = "Start Driving Test"
     static var description = IntentDescription("Starts a new driving test session")
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        print("🎤 StartDrivingTestIntent: perform() called")
-        
         // Get current location
         let currentLocation = await getCurrentLocation()
         
@@ -134,7 +78,6 @@ struct StartDrivingTestIntent: AppIntent {
         
         // Post notification to update UI in main app and start recording
         DispatchQueue.main.async {
-            print("🎤 StartDrivingTestIntent: Posting SiriDrivingTestStarted notification")
             NotificationCenter.default.post(
                 name: NSNotification.Name("SiriDrivingTestStarted"),
                 object: testSession

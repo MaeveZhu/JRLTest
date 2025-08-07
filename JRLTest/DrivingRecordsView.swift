@@ -1,13 +1,13 @@
 import SwiftUI
 import AVFoundation
+import Speech
 
 struct DrivingRecordsView: View {
     @State private var testSessions: [TestSession] = []
     @State private var expandedVINs: Set<String> = []
     @State private var showingSessionDetail = false
     @State private var selectedSession: TestSession?
-    @StateObject private var audioManager = AudioManager.shared
-    @StateObject private var voiceManager = VoiceRecordingManager.shared
+    @StateObject private var audioManager = UnifiedAudioManager()
     @State private var animationPhase: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
     
@@ -171,7 +171,7 @@ struct DrivingRecordsView: View {
     }
     
     private func loadTestSessions() {
-        testSessions = voiceManager.getTestSessions().sorted { $0.startTime > $1.startTime }
+        testSessions = audioManager.getTestSessions().sorted { $0.startTime > $1.startTime }
     }
     
     // Helper function to calculate total duration
@@ -186,7 +186,7 @@ struct VINSectionView: View {
     let vin: String
     let sessions: [TestSession]
     let isExpanded: Bool
-    let audioManager: AudioManager
+    let audioManager: UnifiedAudioManager
     let onToggle: () -> Void
     let onSessionTap: (TestSession) -> Void
     @State private var hoverState = false
@@ -300,7 +300,7 @@ struct VINSectionView: View {
 
 struct SessionRowView: View {
     let session: TestSession
-    let audioManager: AudioManager
+    let audioManager: UnifiedAudioManager
     let onTap: () -> Void
     
     var body: some View {
@@ -375,7 +375,7 @@ struct SessionRowView: View {
 
 struct SessionDetailView: View {
     let session: TestSession
-    let audioManager: AudioManager
+    let audioManager: UnifiedAudioManager
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -432,36 +432,37 @@ struct SessionDetailView: View {
     }
     
     private func segmentRow(index: Int, segment: RecordingSegment) -> some View {
-        HStack(spacing: 15) {
-            Text("Segment \(index)")
-                .font(.system(size: 14, weight: .light))
-                .foregroundColor(.black)
-            
-            Spacer()
-            
-            Button("Play") {
-                audioManager.startPlayback(url: segment.fileURL)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 15) {
+                Circle()
+                    .fill(Color.black.opacity(0.6))
+                    .frame(width: 6, height: 6)
+                
+                Text("Segment \(index)")
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.black)
+                
+                Spacer()
+                
+                Text(formatDuration(segment.duration))
+                    .font(.system(size: 12, weight: .light, design: .monospaced))
+                    .foregroundColor(.gray)
             }
-            .font(.system(size: 12, weight: .light))
-            .foregroundColor(.black)
-            .padding(.horizontal, 15)
-            .padding(.vertical, 8)
-            .overlay(
-                Rectangle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-            )
             
-            Text(formatDuration(segment.duration))
-                .font(.system(size: 12, weight: .light, design: .monospaced))
-                .foregroundColor(.gray)
+            // Audio file info
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Audio File:")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Text(segment.fileName)
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundColor(.black)
+                    .lineLimit(1)
+            }
+            .padding(.leading, 21) // Align with text above
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .overlay(
-            Rectangle()
-                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-        )
+        .padding(.vertical, 8)
     }
     
     private func detailRow(label: String, value: String) -> some View {

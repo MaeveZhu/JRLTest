@@ -8,7 +8,7 @@ struct AutoVoiceTestView: View {
     let startCoordinate: CLLocationCoordinate2D?
     @Binding var showingResultsView: Bool
     
-    @StateObject private var voiceManager = VoiceRecordingManager.shared
+    @StateObject private var audioManager = UnifiedAudioManager()
     @StateObject private var locationManager = LocationManager()
     @Environment(\.dismiss) private var dismiss
     @State private var animationPhase: CGFloat = 0
@@ -40,7 +40,7 @@ struct AutoVoiceTestView: View {
                     
                     instructionsSection
                     
-                    if !voiceManager.recordingSegments.isEmpty {
+                    if !audioManager.recordingSegments.isEmpty {
                         recordingSegmentsSection
                     }
                     
@@ -55,9 +55,11 @@ struct AutoVoiceTestView: View {
         .onAppear {
             startAutoVoiceTest()
             startAnimations()
+            setupSiriNotifications()
         }
         .onDisappear {
-            voiceManager.stopListening()
+            audioManager.stopListening()
+            removeSiriNotifications()
         }
     }
     
@@ -128,24 +130,24 @@ struct AutoVoiceTestView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(voiceManager.isListening ? Color.black.opacity(0.6) : Color.gray.opacity(0.3))
+                        .fill(audioManager.isListening ? Color.black.opacity(0.6) : Color.gray.opacity(0.3))
                         .frame(width: 8, height: 8)
-                        .scaleEffect(voiceManager.isListening ? pulseScale : 1.0)
+                        .scaleEffect(audioManager.isListening ? pulseScale : 1.0)
                         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
                     
-                    Text(voiceManager.isListening ? "Voice Control Active" : "Voice Control Paused")
+                    Text(audioManager.isListening ? "Voice Control Active" : "Voice Control Paused")
                         .font(.system(size: 18, weight: .light))
                         .foregroundColor(.black)
                 }
                 
-                Text(voiceManager.isListening ? "System is monitoring for voice commands" : "Voice monitoring is currently paused")
+                Text(audioManager.isListening ? "System is monitoring for voice commands" : "Voice monitoring is currently paused")
                     .font(.system(size: 14, weight: .ultraLight))
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }
             
             // Recording status
-            if voiceManager.isRecording {
+            if audioManager.isRecording {
                 VStack(spacing: 20) {
                     // Recording indicator
                     ZStack {
@@ -161,7 +163,7 @@ struct AutoVoiceTestView: View {
                     }
                     
                     VStack(spacing: 6) {
-                        Text("Recording Segment \(voiceManager.recordingSegments.count + 1)")
+                        Text("Recording Segment \(audioManager.recordingSegments.count + 1)")
                             .font(.system(size: 20, weight: .light))
                             .foregroundColor(.black)
                         
@@ -177,14 +179,14 @@ struct AutoVoiceTestView: View {
     
     private var instructionsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Voice Commands")
+            Text("Siri Voice Commands")
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
             VStack(spacing: 12) {
-                commandRow(command: "开始录音", description: "Begin recording audio segment")
-                commandRow(command: "停止录音", description: "End current recording")
-                commandRow(command: "结束测试", description: "Complete the test session")
+                commandRow(command: "Hey Siri, report driving test in JRLTest", description: "Start test session with voice and location")
+                commandRow(command: "Hey Siri, start driving test audio in JRLTest", description: "Begin capturing voice and data")
+                commandRow(command: "Hey Siri, stop driving test audio in JRLTest", description: "Stop current audio capture")
             }
             .padding(.vertical, 20)
             .padding(.horizontal, 25)
@@ -223,7 +225,7 @@ struct AutoVoiceTestView: View {
                 .foregroundColor(.black)
             
             VStack(spacing: 10) {
-                ForEach(Array(voiceManager.recordingSegments.enumerated()), id: \.offset) { index, segment in
+                ForEach(Array(audioManager.recordingSegments.enumerated()), id: \.offset) { index, segment in
                     segmentRow(index: index + 1, segment: segment)
                 }
             }
@@ -305,27 +307,126 @@ struct AutoVoiceTestView: View {
     
     private func startAutoVoiceTest() {
         // Start the test session with initial parameters
-        voiceManager.startTestSession(
+        audioManager.startTestSession(
             vin: vin,
             testExecutionId: testExecutionId,
             tag: tag,
             startCoordinate: startCoordinate
         )
-        voiceManager.startListening()
+        audioManager.startListening()
     }
     
     private func endTest() {
-        voiceManager.stopListening()
+        audioManager.stopListening()
         
         // Get the current location as end coordinate
         let endCoordinate = locationManager.currentLocation
         
         // End the test session with the end coordinate
-        let _ = voiceManager.endTestSession(endCoordinate: endCoordinate)
+        let _ = audioManager.endTestSession(endCoordinate: endCoordinate)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             showingResultsView = true
             dismiss()
+        }
+    }
+    
+    // MARK: - SiriKit Integration
+    
+    private func setupSiriNotifications() {
+        print("🔔 AutoVoiceTestView: Setting up Siri notification observers")
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("SiriDrivingTestStarted"),
+            object: nil,
+            queue: .main
+        ) { [self] notification in
+            print("🔔 AutoVoiceTestView: SiriDrivingTestStarted notification received")
+            self.handleSiriDrivingTestStarted(notification)
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("SiriStartRecording"),
+            object: nil,
+            queue: .main
+        ) { [self] _ in
+            print("🔔 AutoVoiceTestView: SiriStartRecording notification received")
+            self.handleSiriStartRecording()
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("SiriStopRecording"),
+            object: nil,
+            queue: .main
+        ) { [self] _ in
+            print("🔔 AutoVoiceTestView: SiriStopRecording notification received")
+            self.handleSiriStopRecording()
+        }
+        
+        print("✅ AutoVoiceTestView: All Siri notification observers registered")
+    }
+    
+    private func removeSiriNotifications() {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSNotification.Name("SiriDrivingTestStarted"),
+            object: nil
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSNotification.Name("SiriStartRecording"),
+            object: nil
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: NSNotification.Name("SiriStopRecording"),
+            object: nil
+        )
+    }
+    
+    private func handleSiriDrivingTestStarted(_ notification: Notification) {
+        guard let testSession = notification.object as? TestSession else { return }
+        
+        // Update the current test session
+        audioManager.currentTestSession = testSession
+        
+        // Start recording automatically
+        audioManager.startListening()
+        
+        // Update UI to show recording is active
+        DispatchQueue.main.async {
+            // Trigger UI updates
+            self.audioManager.isRecording = true
+        }
+        
+        print("✅ SiriKit: Driving test started via voice command")
+    }
+    
+    private func handleSiriStartRecording() {
+        print("🎤 AutoVoiceTestView: SiriStartRecording notification received!")
+        print("🎤 AutoVoiceTestView: Current recording state - isRecording: \(audioManager.isRecording)")
+        
+        // Start recording if not already recording
+        if !audioManager.isRecording {
+            print("🎤 AutoVoiceTestView: Calling audioManager.startRecording()")
+            audioManager.startRecording()
+            print("✅ AutoVoiceTestView: Recording started via voice command")
+        } else {
+            print("ℹ️ AutoVoiceTestView: Recording is already active")
+        }
+    }
+    
+    private func handleSiriStopRecording() {
+        print("🛑 AutoVoiceTestView: SiriStopRecording notification received!")
+        print("🛑 AutoVoiceTestView: Current recording state - isRecording: \(audioManager.isRecording)")
+        
+        // Stop recording if currently recording
+        if audioManager.isRecording {
+            print("🛑 AutoVoiceTestView: Calling audioManager.stopRecording()")
+            audioManager.stopRecording()
+            print("✅ AutoVoiceTestView: Recording stopped via voice command")
+        } else {
+            print("ℹ️ AutoVoiceTestView: No active recording to stop")
         }
     }
 }

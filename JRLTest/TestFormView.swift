@@ -57,9 +57,6 @@ struct TestFormView: View {
         .sheet(isPresented: $showingRecordingView) {
             recordingView
         }
-        .sheet(isPresented: $showingResultsView) {
-            resultsView
-        }
         .alert("位置权限", isPresented: $showingLocationPermissionAlert) {
             locationPermissionButtons
         } message: {
@@ -338,15 +335,6 @@ struct TestFormView: View {
         )
     }
     
-    private var resultsView: some View {
-        TestResultsView(
-            vin: vin,
-            testExecutionId: testExecutionId,
-            tag: selectedTag,
-            milesBefore: milesBefore,
-            milesAfter: milesAfter
-        )
-    }
     
     private var locationPermissionButtons: some View {
         Group {
@@ -405,7 +393,7 @@ struct TestFormView: View {
         }
         
         // 检查麦克风权限
-        let microphoneStatus = AVAudioApplication.shared.recordPermission
+        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
         if microphoneStatus != .granted {
             showingMicrophonePermissionAlert = true
             return
@@ -431,7 +419,7 @@ struct TestFormView: View {
 
     private func startVoiceControlledTest() {
         // Start voice-controlled test session
-        VoiceRecordingManager.shared.startTestSession(
+        UnifiedAudioManager.shared.startTestSession(
             vin: vin,
             testExecutionId: testExecutionId,
             tag: selectedTag,
@@ -443,7 +431,7 @@ struct TestFormView: View {
     }
     
     private func requestMicrophonePermission() {
-        AVAudioApplication.requestRecordPermission { granted in
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
                     // 权限获取成功，可以开始

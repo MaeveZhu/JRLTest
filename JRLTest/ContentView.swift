@@ -7,11 +7,42 @@
 
 import SwiftUI
 
+/**
+ * ContentView - Main application dashboard and navigation hub
+ * BEHAVIOR:
+ * - Provides main navigation interface for the app
+ * - Displays animated background elements
+ * - Offers navigation cards to different app sections
+ * - Manages app-wide animations and visual effects
+ * EXCEPTIONS:
+ * - Navigation may fail if destination views are unavailable
+ * - Animations may not work on older devices
+ * - Background elements may cause performance issues
+ * DEPENDENCIES:
+ * - Requires SwiftUI framework
+ * - Depends on TestFormView, DrivingRecordsView, TestDashboardView
+ * - Uses system animations and visual effects
+ */
 struct ContentView: View {
     @State private var animationOffset: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
+    @State private var hasError = false
+    @State private var errorMessage = ""
     
     var body: some View {
+        Group {
+            if hasError {
+                errorView
+            } else {
+                mainView
+            }
+        }
+        .onAppear {
+            startAnimations()
+        }
+    }
+    
+    private var mainView: some View {
         NavigationView {
             ZStack {
                 // Background with subtle gradient
@@ -69,6 +100,14 @@ struct ContentView: View {
                             subtitle: "分析与统计",
                             delay: 0.3
                         )
+                        
+                        navigationCard(
+                            destination: WebBrowserView(),
+                            icon: "globe",
+                            title: "网页浏览器",
+                            subtitle: "访问网站页面",
+                            delay: 0.4
+                        )
                     }
                     
                     Spacer()
@@ -78,11 +117,37 @@ struct ContentView: View {
             }
             .navigationBarHidden(true)
         }
-        .onAppear {
-            startAnimations()
-        }
     }
     
+    private var errorView: some View {
+        VStack(spacing: 20) {
+            Text("应用启动错误")
+                .font(.title)
+                .foregroundColor(.red)
+            
+            Text(errorMessage)
+                .font(.body)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+            
+            Button("重试") {
+                hasError = false
+                errorMessage = ""
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        }
+        .padding()
+    }
+    
+    /**
+     * BEHAVIOR: Creates animated background elements for visual appeal
+     * EXCEPTIONS: None
+     * RETURNS: some View - Background visual elements
+     * PARAMETERS: None
+     */
     private var abstractBackgroundElements: some View {
         ZStack {
             // Floating geometric shapes
@@ -110,6 +175,17 @@ struct ContentView: View {
         }
     }
     
+    /**
+     * BEHAVIOR: Creates navigation card with destination, icon, and text
+     * EXCEPTIONS: None
+     * RETURNS: some View - Navigation card view
+     * PARAMETERS:
+     * - destination: Destination view to navigate to
+     * - icon: SF Symbol icon name
+     * - title: Card title text
+     * - subtitle: Card subtitle text
+     * - delay: Animation delay for staggered appearance
+     */
     private func navigationCard<Destination: View>(
         destination: Destination,
         icon: String,
@@ -162,6 +238,12 @@ struct ContentView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
+    /**
+     * BEHAVIOR: Starts all animations for the main view
+     * EXCEPTIONS: None
+     * RETURNS: None
+     * PARAMETERS: None
+     */
     private func startAnimations() {
         withAnimation {
             pulseScale = 1.2
