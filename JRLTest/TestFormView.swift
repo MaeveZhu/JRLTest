@@ -4,11 +4,12 @@ import CoreLocation
 import Speech
 
 struct TestFormView: View {
-    @State private var vin = ""
-    @State private var testExecutionId = ""
-    @State private var selectedTag = "Engine Test"
-    @State private var milesBefore = 138
-    @State private var milesAfter = 160
+    @State private var sectionA = "Operator CDSID"
+    @State private var sectionB = "Driver CDSID"
+    @State private var sectionC = "Test Execution"
+    @State private var sectionD = "Test Procedure"
+    @State private var selectedSectionE = "Test Type"
+    @State private var sectionF = 1
     @State private var showingRecordingView = false
     @State private var showingResultsView = false
     @State private var showingLocationPermissionAlert = false
@@ -21,13 +22,12 @@ struct TestFormView: View {
     
     @StateObject private var locationManager = LocationManager()
     
-    let availableTags = [
-        "Engine Test",
-        "Brake Test", 
-        "Steering Test",
-        "Suspension Test",
-        "Electrical Test",
-        "Climate Control Test"
+    let availableSectionEOptions = [
+        "Option 1",
+        "Option 2", 
+        "Option 3",
+        "Option 4",
+        "Option 5"
     ]
     
     var body: some View {
@@ -103,7 +103,7 @@ struct TestFormView: View {
     private var headerSection: some View {
         VStack(spacing: 25) {
             VStack(spacing: 8) {
-                Text("Test Configuration")
+                Text("XRAY Test Configuration")
                     .font(.system(size: 32, weight: .ultraLight))
                     .foregroundColor(.black)
                 
@@ -111,7 +111,7 @@ struct TestFormView: View {
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 80, height: 1)
                 
-                Text("Configure your vehicle test parameters")
+                Text("Configure your XRAY test parameters")
                     .font(.system(size: 14, weight: .ultraLight))
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -121,11 +121,13 @@ struct TestFormView: View {
     
     private var formContainer: some View {
         VStack(spacing: 35) {
-            vinInputSection
-            testExecutionIdSection
-            tagSelectionSection
-            milesBeforeSection
-            startButtonSection
+            sectionAInput
+            sectionBInput
+            sectionCInput
+            sectionDInput
+            sectionESelection
+            sectionFInput
+            nextButtonSection
         }
         .padding(.vertical, 40)
         .padding(.horizontal, 30)
@@ -136,9 +138,9 @@ struct TestFormView: View {
         )
     }
     
-    private var vinInputSection: some View {
+    private var sectionAInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Vehicle Identification")
+            Text("Section A")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -149,10 +151,10 @@ struct TestFormView: View {
                     .frame(height: 50)
                     .overlay(
                         Rectangle()
-                            .stroke(vin.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
+                            .stroke(sectionA.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
                     )
                 
-                TextField("Enter VIN", text: $vin)
+                TextField("Enter Section A", text: $sectionA)
                     .font(.system(size: 16, weight: .light, design: .monospaced))
                     .foregroundColor(.black)
                     .padding(.horizontal, 20)
@@ -160,9 +162,9 @@ struct TestFormView: View {
         }
     }
     
-    private var testExecutionIdSection: some View {
+    private var sectionBInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Execution Identifier")
+            Text("Driver CDSID")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -173,10 +175,10 @@ struct TestFormView: View {
                     .frame(height: 50)
                     .overlay(
                         Rectangle()
-                            .stroke(testExecutionId.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
+                            .stroke(sectionB.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
                     )
                 
-                TextField("Enter Test Execution ID", text: $testExecutionId)
+                TextField("Enter Driver CDSID", text: $sectionB)
                     .font(.system(size: 16, weight: .light, design: .monospaced))
                     .foregroundColor(.black)
                     .padding(.horizontal, 20)
@@ -184,27 +186,51 @@ struct TestFormView: View {
         }
     }
     
-    private var tagSelectionSection: some View {
+    private var sectionCInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Test Category")
+            Text("Test Execution")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
             
-            tagPicker
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.02))
+                    .frame(height: 50)
+                    .overlay(
+                        Rectangle()
+                            .stroke(sectionC.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
+                    )
+                
+                TextField("Enter Test Execution", text: $sectionC)
+                    .font(.system(size: 16, weight: .light, design: .monospaced))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 20)
+            }
         }
     }
     
-    private var tagPicker: some View {
+    private var sectionESelection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Section E")
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(.black)
+                
+            
+            sectionEPicker
+        }
+    }
+    
+    private var sectionEPicker: some View {
         Menu {
-            ForEach(availableTags, id: \.self) { tag in
-                Button(tag) {
-                    selectedTag = tag
+            ForEach(availableSectionEOptions, id: \.self) { option in
+                Button(option) {
+                    selectedSectionE = option
                 }
             }
         } label: {
             HStack {
-                Text(selectedTag)
+                Text(selectedSectionE)
                     .font(.system(size: 16, weight: .light))
                     .foregroundColor(.black)
                 
@@ -224,9 +250,33 @@ struct TestFormView: View {
         }
     }
     
-    private var milesBeforeSection: some View {
+    private var sectionDInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Initial Mileage")
+            Text("Test Procedure")
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(.black)
+                
+            
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.02))
+                    .frame(height: 50)
+                    .overlay(
+                        Rectangle()
+                            .stroke(sectionD.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
+                    )
+                
+                TextField("Enter Test Procedure", text: $sectionD)
+                    .font(.system(size: 16, weight: .light, design: .monospaced))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 20)
+            }
+        }
+    }
+    
+    private var sectionFInput: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Section F")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -241,7 +291,7 @@ struct TestFormView: View {
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
                     
-                    TextField("Miles", value: $milesBefore, format: .number)
+                    TextField("Value", value: $sectionF, format: .number)
                         .font(.system(size: 16, weight: .light, design: .monospaced))
                         .foregroundColor(.black)
                         .keyboardType(.numberPad)
@@ -249,7 +299,7 @@ struct TestFormView: View {
                 }
                 
                 VStack(spacing: 8) {
-                    Button(action: { milesBefore += 1 }) {
+                    Button(action: { sectionF += 1 }) {
                         Image(systemName: "plus")
                             .font(.system(size: 12, weight: .ultraLight))
                             .foregroundColor(.gray)
@@ -262,7 +312,7 @@ struct TestFormView: View {
                     }
                     
                     Button(action: { 
-                        if milesBefore > 0 { milesBefore -= 1 }
+                        if sectionF > 0 { sectionF -= 1 }
                     }) {
                         Image(systemName: "minus")
                             .font(.system(size: 12, weight: .ultraLight))
@@ -279,7 +329,7 @@ struct TestFormView: View {
         }
     }
     
-    private var startButtonSection: some View {
+    private var nextButtonSection: some View {
         VStack(spacing: 20) {
             Button(action: {
                 checkPermissionsAndStart()
@@ -291,7 +341,7 @@ struct TestFormView: View {
                         .scaleEffect(y: pulseScale)
                         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
                     
-                    Text("Initialize Test Session")
+                    Text("Next")
                         .font(.system(size: 18, weight: .light))
                         .foregroundColor(.white)
                         
@@ -306,30 +356,37 @@ struct TestFormView: View {
                 .padding(.vertical, 20)
                 .background(
                     Rectangle()
-                        .fill(vin.isEmpty || testExecutionId.isEmpty ? Color.gray.opacity(0.3) : Color.black)
+                        .fill(isFormComplete ? Color.black : Color.gray.opacity(0.3))
                 )
                 .overlay(
                     Rectangle()
                         .stroke(Color.gray.opacity(0.1), lineWidth: 1)
                 )
             }
-            .disabled(vin.isEmpty || testExecutionId.isEmpty)
+            .disabled(!isFormComplete)
             .buttonStyle(PlainButtonStyle())
             
-            Text("Ensure all fields are completed before initialization")
+            Text("Ensure all fields are completed before proceeding")
                 .font(.system(size: 12, weight: .ultraLight))
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
         }
     }
     
-    // 在TestFormView中更新recordingView:
+    // Computed property to check if form is complete
+    private var isFormComplete: Bool {
+        return !sectionA.isEmpty && 
+               !sectionB.isEmpty && 
+               !sectionC.isEmpty && 
+               !sectionD.isEmpty && 
+               sectionF > 0
+    }
 
     private var recordingView: some View {
         AutoVoiceTestView(
-            vin: vin,
-            testExecutionId: testExecutionId,
-            tag: selectedTag,
+            vin: sectionA, // Using sectionA as VIN
+            testExecutionId: sectionB, // Using sectionB as testExecutionId
+            tag: selectedSectionE, // Using selectedSectionE as tag
             startCoordinate: startCoordinate,
             showingResultsView: $showingResultsView
         )
@@ -420,9 +477,9 @@ struct TestFormView: View {
     private func startVoiceControlledTest() {
         // Start voice-controlled test session
         UnifiedAudioManager.shared.startTestSession(
-            vin: vin,
-            testExecutionId: testExecutionId,
-            tag: selectedTag,
+            vin: sectionA,
+            testExecutionId: sectionB,
+            tag: selectedSectionE,
             startCoordinate: startCoordinate
         )
         

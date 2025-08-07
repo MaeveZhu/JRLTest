@@ -94,14 +94,6 @@ struct ContentView: View {
                         )
                         
                         navigationCard(
-                            destination: TestDashboardView(),
-                            icon: "chart.bar",
-                            title: "测试仪表板",
-                            subtitle: "分析与统计",
-                            delay: 0.3
-                        )
-                        
-                        navigationCard(
                             destination: WebBrowserView(),
                             icon: "globe",
                             title: "网页浏览器",

@@ -21,7 +21,10 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
     private var silenceTimer: Timer?
+    private var maxDurationTimer: Timer?
     private var currentSegmentNumber = 1
+    private let maxRecordingDuration: TimeInterval = 180 // 3 minutes
+    private let silenceDetectionDuration: TimeInterval = 5 // 5 seconds
     
     // MARK: - Permission Manager
     private let permissionManager = PermissionManager.shared
@@ -161,9 +164,11 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         
         print("🛑 UnifiedAudioManager: Stopping recording...")
         
-        // Stop silence timer
+        // Stop timers
         silenceTimer?.invalidate()
         silenceTimer = nil
+        maxDurationTimer?.invalidate()
+        maxDurationTimer = nil
         
         // Stop recording
         recorder.stop()
@@ -203,10 +208,10 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     }
     
     private func startSilenceDetection() {
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
-            print("🔇 SiriKit: 5-second silence detected")
+        silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceDetectionDuration, repeats: false) { [weak self] _ in
+            print("🔇 UnifiedAudioManager: 5-second silence detected")
             DispatchQueue.main.async {
-                self?.stopRecording()
+                self?.stopRecordingAndReturnToListening()
             }
         }
     }
@@ -222,6 +227,8 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         
         silenceTimer?.invalidate()
         silenceTimer = nil
+        maxDurationTimer?.invalidate()
+        maxDurationTimer = nil
         stopRecordingTimer()
         isListening = false
         
@@ -342,6 +349,49 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     func stopListening() {
         isListening = false
         print("🛑 UnifiedAudioManager: Stopped listening for voice commands")
+    }
+    
+    func startRecordingWithCoordinate() {
+        print("🎙️ UnifiedAudioManager: startRecordingWithCoordinate() called")
+        
+        // Check if already recording
+        guard !isRecording else {
+            print("⚠️ UnifiedAudioManager: Already recording, ignoring start request")
+            return
+        }
+        
+        // Check permissions
+        guard permissionManager.allPermissionsGranted else {
+            errorMessage = permissionManager.getMissingPermissionsMessage()
+            print("❌ UnifiedAudioManager: Missing permissions")
+            return
+        }
+        
+        // Start recording with coordinate capture
+        startRecording()
+        
+        // Set up 3-minute max duration timer
+        maxDurationTimer = Timer.scheduledTimer(withTimeInterval: maxRecordingDuration, repeats: false) { [weak self] _ in
+            print("⏰ UnifiedAudioManager: 3-minute max duration reached")
+            DispatchQueue.main.async {
+                self?.stopRecordingAndReturnToListening()
+            }
+        }
+        
+        print("✅ UnifiedAudioManager: Recording started with coordinate capture and 3-minute timer")
+    }
+    
+    private func stopRecordingAndReturnToListening() {
+        print("🛑 UnifiedAudioManager: stopRecordingAndReturnToListening() called")
+        
+        // Stop recording
+        stopRecording()
+        
+        // Return to listening mode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.isListening = true
+            print("🎤 UnifiedAudioManager: Returned to listening mode")
+        }
     }
     
     func startPlayback(url: URL) {
