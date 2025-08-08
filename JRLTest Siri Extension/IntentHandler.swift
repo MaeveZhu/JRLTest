@@ -31,6 +31,9 @@ struct RecordingSegment: Identifiable, Codable {
     let vin: String
     let testExecutionId: String
     let tag: String
+    let startCoordinate: CLLocationCoordinate2D?
+    let endCoordinate: CLLocationCoordinate2D?
+    let recognizedSpeech: String
     
     var duration: TimeInterval {
         return endTime.timeIntervalSince(startTime)
@@ -57,7 +60,7 @@ extension CLLocationCoordinate2D: Codable {
     }
 }
 
-// MARK: - Single App Intent Definition
+// MARK: - App Intent Definitions
 struct StartDrivingTestAudioIntent: AppIntent {
     static var title: LocalizedStringResource = "Start Driving Test Audio"
     static var description = IntentDescription("Starts voice and location recording for driving test")
@@ -79,6 +82,27 @@ struct StartDrivingTestAudioIntent: AppIntent {
     }
 }
 
+struct StopDrivingTestAudioIntent: AppIntent {
+    static var title: LocalizedStringResource = "Stop Driving Test Audio"
+    static var description = IntentDescription("Stops current voice and location recording")
+    static var openAppWhenRun: Bool = true
+    
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        print("🛑 StopDrivingTestAudioIntent: perform() called")
+        
+        // Post notification to stop recording
+        DispatchQueue.main.async {
+            print("🛑 StopDrivingTestAudioIntent: Posting SiriStopRecording notification")
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SiriStopRecording"),
+                object: nil
+            )
+        }
+        
+        return .result(dialog: "Driving test audio recording stopped")
+    }
+}
+
 // MARK: - App Shortcuts Provider
 struct DrivingTestShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
@@ -88,10 +112,22 @@ struct DrivingTestShortcuts: AppShortcutsProvider {
                 phrases: [
                     "Start driving test audio in \(.applicationName)",
                     "Begin test session audio in \(.applicationName)",
-                    "Capture driving data in \(.applicationName)"
+                    "Capture driving data in \(.applicationName)",
+                    "Start recording in \(.applicationName)"
                 ],
                 shortTitle: "Start Audio Recording",
                 systemImageName: "record.circle"
+            ),
+            AppShortcut(
+                intent: StopDrivingTestAudioIntent(),
+                phrases: [
+                    "Stop driving test audio in \(.applicationName)",
+                    "End test session audio in \(.applicationName)",
+                    "Stop recording in \(.applicationName)",
+                    "Stop capturing driving data in \(.applicationName)"
+                ],
+                shortTitle: "Stop Audio Recording",
+                systemImageName: "stop.circle"
             )
         ]
     }

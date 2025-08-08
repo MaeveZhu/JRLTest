@@ -7,9 +7,9 @@ struct WebBrowserView: View {
     @State private var reloadTrigger: Bool = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                TextField("Enter IP:Port (e.g. 192.168.1.100:8080)", text: $address, onCommit: {
+            VStack(spacing: 0) {
+                    HStack {
+                TextField("Enter IP:Port (e.g. 192.168.1.100:5063)", text: $address, onCommit: {
                     if !address.isEmpty {
                         urlString = address.hasPrefix("http") ? address : "http://" + address
                         reloadTrigger.toggle()

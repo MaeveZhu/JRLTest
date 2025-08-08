@@ -9,14 +9,12 @@ struct RecordModel: Identifiable, Codable {
     let duration: TimeInterval
     let fileSize: String
     
-    // Form data
     let vin: String
     let testExecutionId: String
     let tag: String
     let milesBefore: Int
     let milesAfter: Int
     
-    // GPS coordinates
     let startCoordinate: CLLocationCoordinate2D?
     let endCoordinate: CLLocationCoordinate2D?
     
@@ -36,7 +34,6 @@ struct RecordModel: Identifiable, Codable {
         self.fileSize = RecordModel.getFileSize(url: fileURL)
     }
     
-    // 格式化显示信息
     var formattedTimestamp: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -60,7 +57,6 @@ struct RecordModel: Identifiable, Codable {
         return String(format: "%.6f, %.6f", coord.latitude, coord.longitude)
     }
     
-    // MARK: - File Size Helper
     private static func getFileSize(url: URL) -> String {
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
@@ -68,7 +64,7 @@ struct RecordModel: Identifiable, Codable {
                 return formatFileSize(fileSize)
             }
         } catch {
-            print("Error getting file size: \(error)")
+            // Error getting file size
         }
         return "Unknown"
     }
@@ -81,9 +77,4 @@ struct RecordModel: Identifiable, Codable {
     }
 }
 
-// MARK: - CLLocationCoordinate2D Codable
-    
-    private enum CodingKeys: String, CodingKey {
-        case latitude, longitude
-    }
 

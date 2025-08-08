@@ -1,10 +1,3 @@
-//
-//  JRLTestApp.swift
-//  JRLTest
-//
-//  Created by whosyihan on 7/25/25.
-//
-
 import SwiftUI
 import AppIntents
 import CoreLocation
@@ -216,7 +209,8 @@ struct DrivingTestShortcuts: AppShortcutsProvider {
                 phrases: [
                     "Start driving test audio in \(.applicationName)",
                     "Begin test session audio in \(.applicationName)",
-                    "Capture driving data in \(.applicationName)"
+                    "Capture driving data in \(.applicationName)",
+                    "Start recording in \(.applicationName)"
                 ],
                 shortTitle: "Start Recording",
                 systemImageName: "record.circle"
@@ -226,7 +220,8 @@ struct DrivingTestShortcuts: AppShortcutsProvider {
                 phrases: [
                     "Stop driving test audio in \(.applicationName)",
                     "End test session audio in \(.applicationName)",
-                    "Stop capturing driving data in \(.applicationName)"
+                    "Stop capturing driving data in \(.applicationName)",
+                    "Stop recording in \(.applicationName)"
                 ],
                 shortTitle: "Stop Recording",
                 systemImageName: "stop.circle"

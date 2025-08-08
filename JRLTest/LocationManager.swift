@@ -1,23 +1,6 @@
 import Foundation
 import CoreLocation
 
-/**
- * LocationManager - GPS location tracking with centralized permission management
- * BEHAVIOR:
- * - Provides real-time GPS coordinate updates
- * - Handles location accuracy and distance filtering
- * - Tracks location status changes and errors
- * - Uses centralized PermissionManager for permission handling
- * EXCEPTIONS:
- * - Location permission denied by user
- * - GPS hardware failures
- * - Network connectivity issues affecting location services
- * DEPENDENCIES:
- * - Requires location permission (whenInUse or always)
- * - Requires GPS hardware access
- * - Uses CoreLocation framework
- * - Uses centralized PermissionManager
- */
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let permissionManager = PermissionManager.shared
@@ -30,31 +13,20 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.distanceFilter = 1.0 // 1米精度
+        manager.distanceFilter = 1.0
         
-        // Initialize with current permission status from centralized manager
         DispatchQueue.main.async {
             self.authorizationStatus = self.permissionManager.locationPermission
             self.updateLocationStatus()
         }
     }
     
-    /**
-     * BEHAVIOR: Requests location permission using centralized PermissionManager
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Optional callback with permission result
-     */
     func requestLocationPermission(completion: ((Bool) -> Void)? = nil) {
-        print("LocationManager: Requesting location permission via PermissionManager")
-        
         permissionManager.requestLocationPermission { granted in
             DispatchQueue.main.async {
                 if granted {
-                    print("LocationManager: Permission granted, starting location updates")
                     self.startUpdatingLocation()
                 } else {
-                    print("LocationManager: Permission denied")
                     self.locationStatus = .denied
                 }
                 completion?(granted)
@@ -62,34 +34,14 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    /**
-     * BEHAVIOR: Starts continuous location updates
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func startUpdatingLocation() {
-        print("LocationManager: Starting location updates")
         manager.startUpdatingLocation()
     }
     
-    /**
-     * BEHAVIOR: Stops continuous location updates
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func stopUpdatingLocation() {
-        print("LocationManager: Stopping location updates")
         manager.stopUpdatingLocation()
     }
     
-    /**
-     * BEHAVIOR: Updates location status based on authorization and current location
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     private func updateLocationStatus() {
         switch authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
@@ -105,7 +57,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         @unknown default:
             locationStatus = .unknown
         }
-        print("LocationManager: Location status updated to: \(locationStatus)")
     }
     
     // MARK: - CLLocationManagerDelegate
@@ -120,8 +71,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
      */
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        
-        print("LocationManager: Location update: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         
         DispatchQueue.main.async {
             self.currentLocation = location.coordinate
@@ -138,8 +87,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
      * - error: Location error details
      */
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("LocationManager: Location update failed: \(error.localizedDescription)")
-        
         DispatchQueue.main.async {
             self.locationStatus = .error(error.localizedDescription)
         }
@@ -154,23 +101,17 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
      * - status: New authorization status
      */
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        print("LocationManager: Authorization status changed: \(status.rawValue)")
-        
         DispatchQueue.main.async {
             self.authorizationStatus = status
             
             switch status {
             case .authorizedWhenInUse, .authorizedAlways:
-                print("LocationManager: Permission authorized, starting location updates")
                 self.startUpdatingLocation()
             case .denied, .restricted:
-                print("LocationManager: Permission denied or restricted")
                 self.locationStatus = .denied
             case .notDetermined:
-                print("LocationManager: Permission not determined")
                 self.locationStatus = .unknown
             @unknown default:
-                print("LocationManager: Unknown permission status")
                 self.locationStatus = .unknown
             }
         }

@@ -5,55 +5,24 @@ import UIKit
 import Speech
 import Intents
 
-/**
- * PermissionManager - Comprehensive centralized permission management for all app features
- * BEHAVIOR:
- * - Manages microphone, location, speech recognition, and SiriKit permissions
- * - Provides unified permission status checking and requesting
- * - Handles permission denial scenarios with user-friendly messages
- * - Offers settings navigation for denied permissions
- * - Provides permission status callbacks and notifications
- * EXCEPTIONS:
- * - Permission requests may be denied by user
- * - System permission dialogs may not appear in certain states
- * - Settings navigation may fail if URL is invalid
- * - SiriKit permissions may not be available on all devices
- * DEPENDENCIES:
- * - Requires AVFoundation for microphone permissions
- * - Requires CoreLocation for location permissions
- * - Requires Speech framework for speech recognition permissions
- * - Requires Intents framework for SiriKit permissions
- * - Requires UIKit for settings navigation
- */
 class PermissionManager: NSObject, ObservableObject {
     static let shared = PermissionManager()
     
-    // MARK: - Published Properties
     @Published var microphonePermission: AVAudioSession.RecordPermission = .undetermined
     @Published var locationPermission: CLAuthorizationStatus = .notDetermined
     @Published var speechRecognitionPermission: SFSpeechRecognizerAuthorizationStatus = .notDetermined
     @Published var siriPermission: INSiriAuthorizationStatus = .notDetermined
     
-    // MARK: - Private Properties
     private let locationManager = CLLocationManager()
     
     private override init() {
         super.init()
         setupLocationManager()
-        // Delay permission checks to avoid startup crashes
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.checkAllPermissions()
         }
     }
     
-    // MARK: - Permission Status
-    
-    /**
-     * BEHAVIOR: Checks if all required permissions are granted
-     * EXCEPTIONS: None
-     * RETURNS: Bool - true if all permissions granted, false otherwise
-     * PARAMETERS: None
-     */
     var allPermissionsGranted: Bool {
         return microphonePermission == .granted &&
                locationPermission == .authorizedWhenInUse &&
@@ -61,12 +30,6 @@ class PermissionManager: NSObject, ObservableObject {
                siriPermission == .authorized
     }
     
-    /**
-     * BEHAVIOR: Returns list of missing permission names
-     * EXCEPTIONS: None
-     * RETURNS: [String] - Array of missing permission names
-     * PARAMETERS: None
-     */
     var missingPermissions: [String] {
         var missing: [String] = []
         
@@ -89,12 +52,6 @@ class PermissionManager: NSObject, ObservableObject {
         return missing
     }
     
-    /**
-     * BEHAVIOR: Returns detailed permission status for debugging
-     * EXCEPTIONS: None
-     * RETURNS: String - Detailed permission status
-     * PARAMETERS: None
-     */
     var permissionStatusDescription: String {
         return """
         权限状态:
@@ -105,14 +62,6 @@ class PermissionManager: NSObject, ObservableObject {
         """
     }
     
-    // MARK: - Permission Checking
-    
-    /**
-     * BEHAVIOR: Checks all permissions and updates published properties
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func checkAllPermissions() {
         checkMicrophonePermission()
         checkLocationPermission()
@@ -120,62 +69,30 @@ class PermissionManager: NSObject, ObservableObject {
         checkSiriPermission()
     }
     
-    /**
-     * BEHAVIOR: Checks current microphone permission status
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func checkMicrophonePermission() {
         DispatchQueue.main.async {
             self.microphonePermission = AVAudioSession.sharedInstance().recordPermission
         }
     }
     
-    /**
-     * BEHAVIOR: Checks current location permission status
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func checkLocationPermission() {
         DispatchQueue.main.async {
             self.locationPermission = self.locationManager.authorizationStatus
         }
     }
     
-    /**
-     * BEHAVIOR: Checks current speech recognition permission status
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func checkSpeechRecognitionPermission() {
         DispatchQueue.main.async {
             self.speechRecognitionPermission = SFSpeechRecognizer.authorizationStatus()
         }
     }
     
-    /**
-     * BEHAVIOR: Checks current SiriKit permission status
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func checkSiriPermission() {
         DispatchQueue.main.async {
             self.siriPermission = INPreferences.siriAuthorizationStatus()
         }
     }
     
-    // MARK: - Permission Requesting
-    
-    /**
-     * BEHAVIOR: Requests microphone permission from user
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Optional callback with permission result
-     */
     func requestMicrophonePermission(completion: ((Bool) -> Void)? = nil) {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
@@ -185,12 +102,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    /**
-     * BEHAVIOR: Requests location permission from user
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Optional callback with permission result
-     */
     func requestLocationPermission(completion: ((Bool) -> Void)? = nil) {
         let currentStatus = locationManager.authorizationStatus
         
@@ -208,12 +119,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    /**
-     * BEHAVIOR: Requests speech recognition permission from user
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Optional callback with permission result
-     */
     func requestSpeechRecognitionPermission(completion: ((Bool) -> Void)? = nil) {
         SFSpeechRecognizer.requestAuthorization { status in
             DispatchQueue.main.async {
@@ -223,12 +128,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    /**
-     * BEHAVIOR: Requests SiriKit permission from user
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Optional callback with permission result
-     */
     func requestSiriPermission(completion: ((Bool) -> Void)? = nil) {
         INPreferences.requestSiriAuthorization { status in
             DispatchQueue.main.async {
@@ -238,12 +137,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    /**
-     * BEHAVIOR: Requests all required permissions and calls completion when done
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: completion - Callback with final permission status
-     */
     func requestAllPermissions(completion: @escaping (Bool) -> Void) {
         var completedPermissions = 0
         let totalPermissions = 4
@@ -276,14 +169,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Settings Navigation
-    
-    /**
-     * BEHAVIOR: Opens system settings app for permission configuration
-     * EXCEPTIONS: May fail if settings URL is invalid or unavailable
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     func openSettings() {
         guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
             return
@@ -299,14 +184,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Permission Descriptions
-    
-    /**
-     * BEHAVIOR: Returns description text for specific permission
-     * EXCEPTIONS: None
-     * RETURNS: String - Permission description text
-     * PARAMETERS: permission - Permission name to get description for
-     */
     func getPermissionDescription(for permission: String) -> String {
         switch permission {
         case "麦克风":
@@ -322,12 +199,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    /**
-     * BEHAVIOR: Returns error message for missing permissions
-     * EXCEPTIONS: None
-     * RETURNS: String - Error message for missing permissions
-     * PARAMETERS: None
-     */
     func getMissingPermissionsMessage() -> String {
         let missing = missingPermissions
         if missing.isEmpty {
@@ -337,14 +208,6 @@ class PermissionManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Location Manager Setup
-    
-    /**
-     * BEHAVIOR: Sets up location manager delegate
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest

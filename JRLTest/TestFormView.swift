@@ -33,7 +33,6 @@ struct TestFormView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Background with subtle gradient
                 LinearGradient(
                     gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.02)]),
                     startPoint: .top,
@@ -41,7 +40,6 @@ struct TestFormView: View {
                 )
                 .ignoresSafeArea()
                 
-                // Abstract background elements
                 abstractBackgroundElements
                 
                 ScrollView {
@@ -78,11 +76,8 @@ struct TestFormView: View {
         }
     }
     
-    // MARK: - View Components
-    
     private var abstractBackgroundElements: some View {
         ZStack {
-            // Floating geometric shapes
             Circle()
                 .stroke(Color.gray.opacity(0.05), lineWidth: 1)
                 .frame(width: 300, height: 300)
@@ -212,7 +207,7 @@ struct TestFormView: View {
     
     private var sectionESelection: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Section E")
+            Text("Type")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -276,7 +271,7 @@ struct TestFormView: View {
     
     private var sectionFInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Section F")
+            Text("Number")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 

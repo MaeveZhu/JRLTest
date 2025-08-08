@@ -1,18 +1,5 @@
 import SwiftUI
 
-/**
- * PermissionStatusView - Reusable view for displaying permission status
- * 
- * BEHAVIOR:
- * - Shows current permission status for all app permissions
- * - Provides buttons to request permissions or open settings
- * - Displays user-friendly messages for missing permissions
- * - Updates automatically when permission status changes
- * 
- * EXCEPTIONS: None
- * RETURNS: None
- * PARAMETERS: None
- */
 struct PermissionStatusView: View {
     @StateObject private var permissionManager = PermissionManager.shared
     @State private var showingSettings = false
@@ -95,11 +82,7 @@ struct PermissionStatusView: View {
     
     private func requestAllPermissions() {
         permissionManager.requestAllPermissions { granted in
-            if granted {
-                print("✅ All permissions granted")
-            } else {
-                print("❌ Some permissions denied")
-            }
+            // Permission request completed
         }
     }
 }

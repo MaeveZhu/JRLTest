@@ -1,18 +1,6 @@
 import Foundation
 import CoreLocation
 
-/**
- * TestSession - Represents a complete test session with recordings
- * 
- * BEHAVIOR:
- * - Stores test session metadata including VIN, coordinates, and timing
- * - Contains array of recording segments for the session
- * - Supports Codable for persistence
- * 
- * EXCEPTIONS: None
- * RETURNS: None
- * PARAMETERS: None
- */
 struct TestSession: Identifiable, Codable {
     let id = UUID()
     let vin: String
@@ -25,18 +13,6 @@ struct TestSession: Identifiable, Codable {
     var recordingSegments: [RecordingSegment] = []
 }
 
-/**
- * RecordingSegment - Represents a single audio recording segment
- * 
- * BEHAVIOR:
- * - Stores metadata for individual recording segments
- * - Provides formatted duration and time strings
- * - Supports Codable for persistence
- * 
- * EXCEPTIONS: None
- * RETURNS: None
- * PARAMETERS: None
- */
 struct RecordingSegment: Identifiable, Codable {
     let id: UUID
     let segmentNumber: Int
@@ -47,6 +23,9 @@ struct RecordingSegment: Identifiable, Codable {
     let vin: String
     let testExecutionId: String
     let tag: String
+    let startCoordinate: CLLocationCoordinate2D?
+    let endCoordinate: CLLocationCoordinate2D?
+    let recognizedSpeech: String
     
     var duration: TimeInterval {
         return endTime.timeIntervalSince(startTime)
@@ -65,7 +44,6 @@ struct RecordingSegment: Identifiable, Codable {
     }
 }
 
-// MARK: - CLLocationCoordinate2D Codable
 extension CLLocationCoordinate2D: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

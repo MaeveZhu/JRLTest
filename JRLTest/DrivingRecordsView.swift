@@ -1,12 +1,11 @@
 import SwiftUI
 import AVFoundation
 import Speech
+import CoreLocation
 
 struct DrivingRecordsView: View {
     @State private var testSessions: [TestSession] = []
     @State private var expandedVINs: Set<String> = []
-    @State private var showingSessionDetail = false
-    @State private var selectedSession: TestSession?
     @StateObject private var audioManager = UnifiedAudioManager()
     @State private var animationPhase: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -14,7 +13,6 @@ struct DrivingRecordsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Background with subtle gradient
                 LinearGradient(
                     gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.01)]),
                     startPoint: .topLeading,
@@ -22,7 +20,6 @@ struct DrivingRecordsView: View {
                 )
                 .ignoresSafeArea()
                 
-                // Abstract background elements
                 abstractBackgroundElements
                 
                 VStack(spacing: 0) {
@@ -40,17 +37,14 @@ struct DrivingRecordsView: View {
                 loadTestSessions()
                 startAnimations()
             }
-            .sheet(isPresented: $showingSessionDetail) {
-                if let session = selectedSession {
-                    SessionDetailView(session: session, audioManager: audioManager)
-                }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("TestSessionEnded"))) { _ in
+                loadTestSessions()
             }
         }
     }
     
     private var abstractBackgroundElements: some View {
         ZStack {
-            // Floating geometric shapes
             Circle()
                 .stroke(Color.gray.opacity(0.02), lineWidth: 1)
                 .frame(width: 500, height: 500)
@@ -133,10 +127,6 @@ struct DrivingRecordsView: View {
                         audioManager: audioManager,
                         onToggle: {
                             toggleVIN(vin)
-                        },
-                        onSessionTap: { session in
-                            selectedSession = session
-                            showingSessionDetail = true
                         }
                     )
                 }
@@ -171,7 +161,8 @@ struct DrivingRecordsView: View {
     }
     
     private func loadTestSessions() {
-        testSessions = audioManager.getTestSessions().sorted { $0.startTime > $1.startTime }
+        let sessions = audioManager.getTestSessions()
+        testSessions = sessions.sorted { $0.startTime > $1.startTime }
     }
     
     // Helper function to calculate total duration
@@ -188,7 +179,6 @@ struct VINSectionView: View {
     let isExpanded: Bool
     let audioManager: UnifiedAudioManager
     let onToggle: () -> Void
-    let onSessionTap: (TestSession) -> Void
     @State private var hoverState = false
     
     var body: some View {
@@ -277,7 +267,7 @@ struct VINSectionView: View {
                 SessionRowView(
                     session: session,
                     audioManager: audioManager,
-                    onTap: { onSessionTap(session) }
+                    onTap: { }
                 )
             }
         }
@@ -304,19 +294,50 @@ struct SessionRowView: View {
     let onTap: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 20) {
-                sessionIndicator
-                sessionInfo
-                Spacer()
-                sessionDetails
+        VStack(spacing: 0) {
+            // Session header
+            sessionHeader
+            
+            // Audio clips
+            if !session.recordingSegments.isEmpty {
+                audioClipsSection
+            } else {
+                // No recording segments
+                VStack(spacing: 12) {
+                    HStack(spacing: 15) {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                        
+                        Text("No recording segments")
+                            .font(.system(size: 14, weight: .light))
+                            .foregroundColor(.gray)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 15)
+                    .background(Color.gray.opacity(0.02))
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.gray.opacity(0.05), lineWidth: 1)
+                    )
+                }
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 20)
-            .background(Color.white)
-            .overlay(sessionBorder)
         }
-        .buttonStyle(PlainButtonStyle())
+        .background(Color.white)
+        .overlay(sessionBorder)
+    }
+    
+    private var sessionHeader: some View {
+        HStack(spacing: 20) {
+            sessionIndicator
+            sessionInfo
+            Spacer()
+            sessionDetails
+        }
+        .padding(.horizontal, 30)
+        .padding(.vertical, 20)
     }
     
     private var sessionIndicator: some View {
@@ -331,9 +352,19 @@ struct SessionRowView: View {
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
             
-            Text("Started: \(formatTime(session.startTime))")
-                .font(.system(size: 12, weight: .ultraLight))
-                .foregroundColor(.gray)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Operator: \(session.vin)")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Text("Driver: \(session.testExecutionId)")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Text("Started: \(formatTime(session.startTime))")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+            }
         }
     }
     
@@ -346,6 +377,168 @@ struct SessionRowView: View {
             Text(formatDuration(calculateSessionDuration()))
                 .font(.system(size: 10, weight: .ultraLight, design: .monospaced))
                 .foregroundColor(.gray)
+        }
+    }
+    
+    private var audioClipsSection: some View {
+        VStack(spacing: 1) {
+            ForEach(Array(session.recordingSegments.enumerated()), id: \.offset) { index, segment in
+                audioClipRow(index: index + 1, segment: segment)
+            }
+        }
+    }
+    
+    private func audioClipRow(index: Int, segment: RecordingSegment) -> some View {
+        VStack(spacing: 12) {
+            // Audio clip header
+            HStack(spacing: 15) {
+                Circle()
+                    .fill(Color.black.opacity(0.4))
+                    .frame(width: 8, height: 8)
+                
+                Text("Audio Clip \(index)")
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.black)
+                
+                Spacer()
+                
+                Text(formatDuration(segment.duration))
+                    .font(.system(size: 12, weight: .light, design: .monospaced))
+                    .foregroundColor(.gray)
+            }
+            
+            // Coordinates info
+            coordinatesSection(segment: segment)
+            
+            // Speech recognition section - always show for debugging
+            speechRecognitionSection(segment: segment)
+            
+            // Audio player
+            audioPlayerSection(segment: segment)
+        }
+        .padding(.horizontal, 30)
+        .padding(.vertical, 15)
+        .background(Color.gray.opacity(0.02))
+        .overlay(
+            Rectangle()
+                .stroke(Color.gray.opacity(0.05), lineWidth: 1)
+        )
+    }
+    
+    private func speechRecognitionSection(segment: RecordingSegment) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 15) {
+                Image(systemName: "text.bubble")
+                    .font(.system(size: 16))
+                    .foregroundColor(.blue)
+                
+                Text("Recognized Speech:")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+            }
+            
+            if segment.recognizedSpeech.isEmpty || segment.recognizedSpeech == "Speech recognition not available in this mode" {
+                Text("Nothing is detected")
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundColor(.gray)
+                    .italic()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.05))
+                    .cornerRadius(6)
+            } else {
+                Text(segment.recognizedSpeech)
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundColor(.black)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(Color.blue.opacity(0.05))
+                    .cornerRadius(6)
+            }
+        }
+    }
+    
+    private func coordinatesSection(segment: RecordingSegment) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 20) {
+                coordinateInfo(label: "Start", coordinate: segment.startCoordinate)
+                coordinateInfo(label: "End", coordinate: segment.endCoordinate)
+            }
+        }
+    }
+    
+    private func coordinateInfo(label: String, coordinate: CLLocationCoordinate2D?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .ultraLight))
+                .foregroundColor(.gray)
+            
+            if let coord = coordinate {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lat: \(String(format: "%.6f", coord.latitude))")
+                        .font(.system(size: 10, weight: .light, design: .monospaced))
+                        .foregroundColor(.black)
+                    
+                    Text("Lon: \(String(format: "%.6f", coord.longitude))")
+                        .font(.system(size: 10, weight: .light, design: .monospaced))
+                        .foregroundColor(.black)
+                }
+            } else {
+                Text("N/A")
+                    .font(.system(size: 10, weight: .light))
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+    
+    private func audioPlayerSection(segment: RecordingSegment) -> some View {
+        HStack(spacing: 15) {
+            // Check if audio file exists
+            if FileManager.default.fileExists(atPath: segment.fileURL.path) {
+                // Play button
+                Button(action: {
+                    audioManager.playAudioFile(at: segment.fileURL)
+                }) {
+                    Image(systemName: audioManager.isPlaying(segment.fileURL) ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.black)
+                }
+                
+                // Audio file info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Audio File:")
+                        .font(.system(size: 11, weight: .ultraLight))
+                        .foregroundColor(.gray)
+                    
+                    Text(segment.fileName)
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    Text("✅ File exists")
+                        .font(.system(size: 10, weight: .ultraLight))
+                        .foregroundColor(.green)
+                }
+                
+                Spacer()
+            } else {
+                // No recording available
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Audio Recording:")
+                        .font(.system(size: 11, weight: .ultraLight))
+                        .foregroundColor(.gray)
+                    
+                    Text("No recording")
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundColor(.gray)
+                        .italic()
+                }
+                
+                Spacer()
+            }
         }
     }
     
@@ -373,124 +566,7 @@ struct SessionRowView: View {
     }
 }
 
-struct SessionDetailView: View {
-    let session: TestSession
-    let audioManager: UnifiedAudioManager
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 30) {
-                sessionHeader
-                segmentsList
-                Spacer()
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private var sessionHeader: some View {
-        VStack(spacing: 20) {
-            Text(session.tag)
-                .font(.system(size: 24, weight: .light))
-                .foregroundColor(.black)
-            
-            VStack(spacing: 12) {
-                detailRow(label: "VIN", value: session.vin)
-                detailRow(label: "Duration", value: formatDuration(calculateTotalDuration()))
-                detailRow(label: "Segments", value: "\(session.recordingSegments.count)")
-            }
-            .padding(25)
-            .background(Color.white)
-            .overlay(
-                Rectangle()
-                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-            )
-        }
-    }
-    
-    private var segmentsList: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Recording Segments")
-                .font(.system(size: 18, weight: .light))
-                .foregroundColor(.black)
-            
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(Array(session.recordingSegments.enumerated()), id: \.offset) { index, segment in
-                        segmentRow(index: index + 1, segment: segment)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func segmentRow(index: Int, segment: RecordingSegment) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 15) {
-                Circle()
-                    .fill(Color.black.opacity(0.6))
-                    .frame(width: 6, height: 6)
-                
-                Text("Segment \(index)")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                Text(formatDuration(segment.duration))
-                    .font(.system(size: 12, weight: .light, design: .monospaced))
-                    .foregroundColor(.gray)
-            }
-            
-            // Audio file info
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Audio File:")
-                    .font(.system(size: 11, weight: .ultraLight))
-                    .foregroundColor(.gray)
-                
-                Text(segment.fileName)
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundColor(.black)
-                    .lineLimit(1)
-            }
-            .padding(.leading, 21) // Align with text above
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private func detailRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 14, weight: .light))
-                .foregroundColor(.gray)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.system(size: 14, weight: .light, design: .monospaced))
-                .foregroundColor(.black)
-        }
-    }
-    
-    private func calculateTotalDuration() -> TimeInterval {
-        return session.recordingSegments.reduce(0) { total, segment in
-            total + segment.duration
-        }
-    }
-    
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
+
 
 #Preview {
     DrivingRecordsView()

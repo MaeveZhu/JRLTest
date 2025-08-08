@@ -1,28 +1,5 @@
-//
-//  ContentView.swift
-//  JRLTest
-//
-//  Created by whosyihan on 7/25/25.
-//
-
 import SwiftUI
 
-/**
- * ContentView - Main application dashboard and navigation hub
- * BEHAVIOR:
- * - Provides main navigation interface for the app
- * - Displays animated background elements
- * - Offers navigation cards to different app sections
- * - Manages app-wide animations and visual effects
- * EXCEPTIONS:
- * - Navigation may fail if destination views are unavailable
- * - Animations may not work on older devices
- * - Background elements may cause performance issues
- * DEPENDENCIES:
- * - Requires SwiftUI framework
- * - Depends on TestFormView, DrivingRecordsView, TestDashboardView
- * - Uses system animations and visual effects
- */
 struct ContentView: View {
     @State private var animationOffset: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -45,7 +22,6 @@ struct ContentView: View {
     private var mainView: some View {
         NavigationView {
             ZStack {
-                // Background with subtle gradient
                 LinearGradient(
                     gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.05)]),
                     startPoint: .topLeading,
@@ -53,11 +29,9 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
                 
-                // Abstract background shapes
                 abstractBackgroundElements
                 
                 VStack(spacing: 60) {
-                    // Header section
                     VStack(spacing: 20) {
                         Text("JRL")
                             .font(.system(size: 48, weight: .ultraLight, design: .default))
@@ -67,7 +41,6 @@ struct ContentView: View {
                             .font(.system(size: 48, weight: .thin, design: .default))
                             .foregroundColor(.gray)
                         
-                        // Animated line
                         Rectangle()
                             .fill(Color.black)
                             .frame(width: 120, height: 1)
@@ -75,7 +48,6 @@ struct ContentView: View {
                             .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulseScale)
                     }
                     
-                    // Navigation options
                     VStack(spacing: 30) {
                         navigationCard(
                             destination: TestFormView(),
@@ -134,15 +106,8 @@ struct ContentView: View {
         .padding()
     }
     
-    /**
-     * BEHAVIOR: Creates animated background elements for visual appeal
-     * EXCEPTIONS: None
-     * RETURNS: some View - Background visual elements
-     * PARAMETERS: None
-     */
     private var abstractBackgroundElements: some View {
         ZStack {
-            // Floating geometric shapes
             Circle()
                 .fill(Color.gray.opacity(0.03))
                 .frame(width: 200, height: 200)
@@ -167,17 +132,6 @@ struct ContentView: View {
         }
     }
     
-    /**
-     * BEHAVIOR: Creates navigation card with destination, icon, and text
-     * EXCEPTIONS: None
-     * RETURNS: some View - Navigation card view
-     * PARAMETERS:
-     * - destination: Destination view to navigate to
-     * - icon: SF Symbol icon name
-     * - title: Card title text
-     * - subtitle: Card subtitle text
-     * - delay: Animation delay for staggered appearance
-     */
     private func navigationCard<Destination: View>(
         destination: Destination,
         icon: String,
@@ -187,7 +141,6 @@ struct ContentView: View {
     ) -> some View {
         NavigationLink(destination: destination) {
             HStack(spacing: 20) {
-                // Icon container
                 ZStack {
                     Rectangle()
                         .fill(Color.gray.opacity(0.05))
@@ -230,12 +183,6 @@ struct ContentView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    /**
-     * BEHAVIOR: Starts all animations for the main view
-     * EXCEPTIONS: None
-     * RETURNS: None
-     * PARAMETERS: None
-     */
     private func startAnimations() {
         withAnimation {
             pulseScale = 1.2
@@ -245,10 +192,8 @@ struct ContentView: View {
             animationOffset = 50
         }
         
-        // Animate cards appearance
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
-                // Card animations will be handled by individual cards
             }
         }
     }
