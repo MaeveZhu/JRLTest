@@ -207,7 +207,7 @@ struct TestFormView: View {
     
     private var sectionESelection: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Type")
+            Text("Test Type")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -271,7 +271,7 @@ struct TestFormView: View {
     
     private var sectionFInput: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("Number")
+            Text("Iteration ID(#)")
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
                 
@@ -470,11 +470,14 @@ struct TestFormView: View {
     }
 
     private func startVoiceControlledTest() {
-        // Start voice-controlled test session
+        // Start voice-controlled test session with all form fields
         UnifiedAudioManager.shared.startTestSession(
-            vin: sectionA,
-            testExecutionId: sectionB,
-            tag: selectedSectionE,
+            operatorCDSID: sectionA,
+            driverCDSID: sectionB,
+            testExecution: sectionC,
+            testProcedure: sectionD,
+            testType: selectedSectionE,
+            testNumber: sectionF,
             startCoordinate: startCoordinate
         )
         

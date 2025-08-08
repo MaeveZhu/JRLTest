@@ -31,7 +31,7 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var audioLevelTimer: Timer?
     private var currentSegmentNumber = 1
     private let maxRecordingDuration: TimeInterval = 180
-    private let silenceDetectionDuration: TimeInterval = 5
+    private let silenceDetectionDuration: TimeInterval = 10  // Changed from 5 to 10 seconds
     private var currentSegmentStartCoordinate: CLLocationCoordinate2D?
     
     // Audio Engine for Speech Recognition
@@ -97,9 +97,12 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         }
         
         currentTestSession = TestSession(
-            vin: "SIRI_TEST",
-            testExecutionId: UUID().uuidString,
-            tag: "SiriKit Test",
+            operatorCDSID: "SIRI_TEST",
+            driverCDSID: UUID().uuidString,
+            testExecution: UUID().uuidString,
+            testProcedure: "SiriKit Test",
+            testType: "SiriKit Test",
+            testNumber: 1,
             startCoordinate: nil,
             startTime: Date()
         )
@@ -189,9 +192,12 @@ func startRecording() {
                 fileURL: recorder.url,
                 startTime: startTime,
                 endTime: Date(),
-                vin: session.vin,
-                testExecutionId: session.testExecutionId,
-                tag: session.tag,
+                operatorCDSID: session.operatorCDSID,
+                driverCDSID: session.driverCDSID,
+                testExecution: session.testExecution,
+                testProcedure: session.testProcedure,
+                testType: session.testType,
+                testNumber: session.testNumber,
                 startCoordinate: currentSegmentStartCoordinate,
                 endCoordinate: currentSegmentEndCoordinate,
                 recognizedSpeech: speechText
@@ -215,6 +221,14 @@ func startRecording() {
         isRecording = false
         recordingDuration = 0
         recognizedSpeech = ""
+        
+        // Properly deactivate audio session
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            print("✅ Audio session deactivated")
+        } catch {
+            print("❌ Error deactivating audio session: \(error)")
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.isListening = true
@@ -318,9 +332,12 @@ func startRecording() {
                         fileURL: reconstructedURL,
                         startTime: segment.startTime,
                         endTime: segment.endTime,
-                        vin: segment.vin,
-                        testExecutionId: segment.testExecutionId,
-                        tag: segment.tag,
+                        operatorCDSID: segment.operatorCDSID,
+                        driverCDSID: segment.driverCDSID,
+                        testExecution: segment.testExecution,
+                        testProcedure: segment.testProcedure,
+                        testType: segment.testType,
+                        testNumber: segment.testNumber,
                         startCoordinate: segment.startCoordinate,
                         endCoordinate: segment.endCoordinate,
                         recognizedSpeech: segment.recognizedSpeech
@@ -382,11 +399,14 @@ func startRecording() {
         permissionManager.openSettings()
     }
     
-    func startTestSession(vin: String, testExecutionId: String, tag: String, startCoordinate: CLLocationCoordinate2D?) {
+    func startTestSession(operatorCDSID: String, driverCDSID: String, testExecution: String, testProcedure: String, testType: String, testNumber: Int, startCoordinate: CLLocationCoordinate2D?) {
         currentTestSession = TestSession(
-            vin: vin,
-            testExecutionId: testExecutionId,
-            tag: tag,
+            operatorCDSID: operatorCDSID,
+            driverCDSID: driverCDSID,
+            testExecution: testExecution,
+            testProcedure: testProcedure,
+            testType: testType,
+            testNumber: testNumber,
             startCoordinate: startCoordinate,
             startTime: Date()
         )
@@ -575,7 +595,8 @@ func playAudioFile(at url: URL) {
         let averageLevel = pow(10.0, averagePower / 20.0)
         let peakLevel = pow(10.0, peakPower / 20.0)
         
-        if averageLevel > 0.001 || peakLevel > 0.01 {
+        // More sensitive threshold for voice detection
+        if averageLevel > 0.0005 || peakLevel > 0.005 {
             resetSilenceTimer()
         }
     }
@@ -653,6 +674,16 @@ func playAudioFile(at url: URL) {
             return
         }
         
+        // Ensure audio session is properly configured
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true)
+        } catch {
+            print("❌ Failed to configure audio session for speech recognition: \(error)")
+            return
+        }
+        
         // Set up audio engine for speech recognition
         audioEngine = AVAudioEngine()
         inputNode = audioEngine?.inputNode
@@ -671,8 +702,10 @@ func playAudioFile(at url: URL) {
         
         recognitionRequest.shouldReportPartialResults = true
         
-        // Install tap on input node
+        // Install tap on input node with compatible format
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+        print("🎤 Using recording format: \(recordingFormat)")
+        
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
         }
@@ -720,8 +753,11 @@ func playAudioFile(at url: URL) {
         isRecognizingSpeech = false
         
         // Stop audio engine if it was started
-        audioEngine?.stop()
-        inputNode?.removeTap(onBus: 0)
+        if let audioEngine = audioEngine {
+            audioEngine.stop()
+            inputNode?.removeTap(onBus: 0)
+            print("🛑 Audio engine stopped")
+        }
         audioEngine = nil
         inputNode = nil
         
@@ -753,6 +789,19 @@ func playAudioFile(at url: URL) {
         print("🎤 Testing speech recognition...")
         setupSpeechRecognition()
         startSpeechRecognition()
+    }
+
+    // Legacy method for backward compatibility
+    func startTestSession(vin: String, testExecutionId: String, tag: String, startCoordinate: CLLocationCoordinate2D?) {
+        startTestSession(
+            operatorCDSID: vin,
+            driverCDSID: testExecutionId,
+            testExecution: testExecutionId,
+            testProcedure: "Legacy Test",
+            testType: tag,
+            testNumber: 1,
+            startCoordinate: startCoordinate
+        )
     }
 }
 

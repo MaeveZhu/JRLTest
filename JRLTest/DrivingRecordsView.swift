@@ -5,7 +5,7 @@ import CoreLocation
 
 struct DrivingRecordsView: View {
     @State private var testSessions: [TestSession] = []
-    @State private var expandedVINs: Set<String> = []
+    @State private var expandedOperators: Set<String> = []
     @StateObject private var audioManager = UnifiedAudioManager()
     @State private var animationPhase: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -119,14 +119,14 @@ struct DrivingRecordsView: View {
     private var sessionsList: some View {
         ScrollView {
             LazyVStack(spacing: 20) {
-                ForEach(groupedSessions.keys.sorted(), id: \.self) { vin in
-                    VINSectionView(
-                        vin: vin,
-                        sessions: groupedSessions[vin] ?? [],
-                        isExpanded: expandedVINs.contains(vin),
+                ForEach(groupedSessions.keys.sorted(), id: \.self) { operatorCDSID in
+                    OperatorSectionView(
+                        operatorCDSID: operatorCDSID,
+                        sessions: groupedSessions[operatorCDSID] ?? [],
+                        isExpanded: expandedOperators.contains(operatorCDSID),
                         audioManager: audioManager,
                         onToggle: {
-                            toggleVIN(vin)
+                            toggleOperator(operatorCDSID)
                         }
                     )
                 }
@@ -137,15 +137,15 @@ struct DrivingRecordsView: View {
     }
     
     private var groupedSessions: [String: [TestSession]] {
-        Dictionary(grouping: testSessions, by: { $0.vin })
+        Dictionary(grouping: testSessions, by: { $0.operatorCDSID })
     }
     
-    private func toggleVIN(_ vin: String) {
+    private func toggleOperator(_ operatorCDSID: String) {
         withAnimation(.easeInOut(duration: 0.3)) {
-            if expandedVINs.contains(vin) {
-                expandedVINs.remove(vin)
+            if expandedOperators.contains(operatorCDSID) {
+                expandedOperators.remove(operatorCDSID)
             } else {
-                expandedVINs.insert(vin)
+                expandedOperators.insert(operatorCDSID)
             }
         }
     }
@@ -173,8 +173,8 @@ struct DrivingRecordsView: View {
     }
 }
 
-struct VINSectionView: View {
-    let vin: String
+struct OperatorSectionView: View {
+    let operatorCDSID: String
     let sessions: [TestSession]
     let isExpanded: Bool
     let audioManager: UnifiedAudioManager
@@ -183,8 +183,8 @@ struct VINSectionView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // VIN Header
-            vinHeaderButton
+            // Operator Header
+            operatorHeaderButton
             
             // Expanded Content
             if isExpanded {
@@ -198,11 +198,11 @@ struct VINSectionView: View {
         )
     }
     
-    private var vinHeaderButton: some View {
+    private var operatorHeaderButton: some View {
         Button(action: onToggle) {
             HStack(spacing: 20) {
                 chevronIcon
-                vinInfo
+                operatorInfo
                 Spacer()
                 latestSessionDate
             }
@@ -223,9 +223,9 @@ struct VINSectionView: View {
             .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
     
-    private var vinInfo: some View {
+    private var operatorInfo: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("VIN: \(vin)")
+            Text("Operator: \(operatorCDSID)")
                 .font(.system(size: 18, weight: .light))
                 .foregroundColor(.black)
             
@@ -348,16 +348,24 @@ struct SessionRowView: View {
     
     private var sessionInfo: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(session.tag)
+            Text(session.testType)
                 .font(.system(size: 16, weight: .light))
                 .foregroundColor(.black)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text("Operator: \(session.vin)")
+                Text("Driver: \(session.driverCDSID)")
                     .font(.system(size: 11, weight: .ultraLight))
                     .foregroundColor(.gray)
                 
-                Text("Driver: \(session.testExecutionId)")
+                Text("Test Execution: \(session.testExecution)")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Text("Procedure: \(session.testProcedure)")
+                    .font(.system(size: 11, weight: .ultraLight))
+                    .foregroundColor(.gray)
+                
+                Text("Number: \(session.testNumber)")
                     .font(.system(size: 11, weight: .ultraLight))
                     .foregroundColor(.gray)
                 
@@ -430,7 +438,7 @@ struct SessionRowView: View {
             HStack(spacing: 15) {
                 Image(systemName: "text.bubble")
                     .font(.system(size: 16))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.black)
                 
                 Text("Recognized Speech:")
                     .font(.system(size: 11, weight: .ultraLight))

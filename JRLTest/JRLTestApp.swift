@@ -118,9 +118,12 @@ struct StartDrivingTestIntent: AppIntent {
         
         // Create test session (using proper TestSession structure)
         let testSession = TestSession(
-            vin: "SIRI_TEST",
-            testExecutionId: UUID().uuidString,
-            tag: "SiriKit Test",
+            operatorCDSID: "SIRI_TEST",
+            driverCDSID: UUID().uuidString,
+            testExecution: UUID().uuidString,
+            testProcedure: "SiriKit Test",
+            testType: "SiriKit Test",
+            testNumber: 1,
             startCoordinate: currentLocation,
             startTime: Date()
         )

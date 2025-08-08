@@ -192,9 +192,12 @@ struct AutoVoiceTestView: View {
         }
         
         audioManager.startTestSession(
-            vin: vin,
-            testExecutionId: testExecutionId,
-            tag: tag,
+            operatorCDSID: vin,
+            driverCDSID: testExecutionId,
+            testExecution: testExecutionId,
+            testProcedure: "Auto Voice Test",
+            testType: tag,
+            testNumber: 1,
             startCoordinate: startCoordinate
         )
     }
