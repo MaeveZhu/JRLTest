@@ -25,13 +25,11 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
-    private var silenceTimer: Timer?
     private var maxDurationTimer: Timer?
     private var playbackTimer: Timer?
     private var audioLevelTimer: Timer?
     private var currentSegmentNumber = 1
     private let maxRecordingDuration: TimeInterval = 180
-    private let silenceDetectionDuration: TimeInterval = 10  // Changed from 5 to 10 seconds
     private var currentSegmentStartCoordinate: CLLocationCoordinate2D?
     
     // Audio Engine for Speech Recognition
@@ -51,11 +49,7 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             self.setupAudioSession()
         }
     }
-    
-    deinit {
-        stopAllAudio()
-    }
-    
+
     private func setupSiriKit() {
         let currentStatus = INPreferences.siriAuthorizationStatus()
         
@@ -112,54 +106,55 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         startRecording()
     }
     
-    // ... existing code ...
-func startRecording() {
-    guard !isRecording else { return }
-    
-    do {
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
-        try audioSession.setActive(true)
+    func startRecording() {
+        guard !isRecording else { return }
         
-        let fileName = "siri_segment_\(currentSegmentNumber)_\(Date().timeIntervalSince1970).m4a"
-        let recordingsURL = try createRecordingsDirectory()
-        let fileURL = recordingsURL.appendingPathComponent(fileName)
-        
-        // Use more compatible audio settings
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100.0,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-            AVEncoderBitRateKey: 128000
-        ]
-        
-        audioRecorder = try AVAudioRecorder(url: fileURL, settings: settings)
-        audioRecorder?.delegate = self
-        audioRecorder?.record()
-        
-        recordingStartTime = Date()
-        isRecording = true
-        currentRecordingURL = fileURL
-        
-        currentSegmentStartCoordinate = getCurrentLocation()
-        
-        startRecordingTimer()
-        
-        startAudioLevelMonitoring()
-        
-        startSilenceDetection()
-        
-        // Start speech recognition immediately
-        setupSpeechRecognition()
-        startSpeechRecognition()
-        
-    } catch {
-        errorMessage = "录音启动失败: \(error.localizedDescription)"
-        print("❌ Recording start error: \(error)")
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true)
+            
+            let fileName = "siri_segment_\(currentSegmentNumber)_\(Date().timeIntervalSince1970).m4a"
+            let recordingsURL = try createRecordingsDirectory()
+            let fileURL = recordingsURL.appendingPathComponent(fileName)
+            
+            // Use more compatible audio settings
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+                AVEncoderBitRateKey: 128000
+            ]
+            
+            audioRecorder = try AVAudioRecorder(url: fileURL, settings: settings)
+            audioRecorder?.delegate = self
+            audioRecorder?.record()
+            
+            recordingStartTime = Date()
+            isRecording = true
+            currentRecordingURL = fileURL
+            
+            currentSegmentStartCoordinate = getCurrentLocation()
+            
+            startRecordingTimer()
+            
+            // Start speech recognition immediately
+            setupSpeechRecognition()
+            startSpeechRecognition()
+            
+            // Start max duration timer (180 seconds)
+            maxDurationTimer = Timer.scheduledTimer(withTimeInterval: maxRecordingDuration, repeats: false) { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.stopRecording()
+                }
+            }
+            
+        } catch {
+            errorMessage = "录音启动失败: \(error.localizedDescription)"
+            print("❌ Recording start error: \(error)")
+        }
     }
-}
-// ... existing code ...
     
     func stopRecording() {
         guard isRecording, let recorder = audioRecorder else { 
@@ -169,11 +164,9 @@ func startRecording() {
         // Stop speech recognition first
         stopSpeechRecognition()
         
-        silenceTimer?.invalidate()
-        silenceTimer = nil
+        // Stop max duration timer
         maxDurationTimer?.invalidate()
         maxDurationTimer = nil
-        stopAudioLevelMonitoring()
         
         recorder.stop()
         stopRecordingTimer()
@@ -233,66 +226,6 @@ func startRecording() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.isListening = true
         }
-    }
-    
-    private func startSilenceDetection() {
-        silenceTimer?.invalidate()
-        silenceTimer = nil
-        
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceDetectionDuration, repeats: false) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.stopRecordingAndReturnToListening()
-            }
-        }
-    }
-    
-    private func stopAllAudio() {
-        if isRecording {
-            audioRecorder?.stop()
-            audioRecorder = nil
-            isRecording = false
-        }
-        
-        if isPlaying {
-            audioPlayer?.stop()
-            audioPlayer = nil
-            isPlaying = false
-            currentPlaybackURL = nil
-            playbackProgress = 0
-        }
-        
-        silenceTimer?.invalidate()
-        silenceTimer = nil
-        maxDurationTimer?.invalidate()
-        maxDurationTimer = nil
-        playbackTimer?.invalidate()
-        playbackTimer = nil
-        stopRecordingTimer()
-        stopPlaybackTimer()
-        stopSpeechRecognition()
-        isListening = false
-        
-        do {
-            try AVAudioSession.sharedInstance().setActive(false)
-        } catch {
-            // Error deactivating audio session
-        }
-        
-        audioLevelTimer?.invalidate()
-        audioLevelTimer = nil
-    }
-    
-    private func createRecordingsDirectory() throws -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let recordingsURL = documentsPath.appendingPathComponent("SiriRecordings")
-        if !FileManager.default.fileExists(atPath: recordingsURL.path) {
-            try FileManager.default.createDirectory(at: recordingsURL, withIntermediateDirectories: true)
-        }
-        return recordingsURL
-    }
-    
-    private func listRecordingsDirectory() {
-        // Debug method - can be removed in production
     }
     
     private func startRecordingTimer() {
@@ -376,9 +309,6 @@ func startRecording() {
         currentSegmentNumber = 1
         isListening = false
         
-        // Stop all audio operations
-        stopAllAudio()
-        
         // Post notification for UI update
         NotificationCenter.default.post(name: NSNotification.Name("TestSessionEnded"), object: nil)
     }
@@ -449,11 +379,7 @@ func startRecording() {
         
         startRecording()
         
-        maxDurationTimer = Timer.scheduledTimer(withTimeInterval: maxRecordingDuration, repeats: false) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.stopRecordingAndReturnToListening()
-            }
-        }
+        // Removed maxDurationTimer = Timer.scheduledTimer(...)
     }
     
     private func stopRecordingAndReturnToListening() {
@@ -463,8 +389,7 @@ func startRecording() {
             self.isListening = true
         }
     }
-    
-// ... existing code ...
+
 private func verifyAudioFile(_ url: URL) -> Bool {
     let exists = FileManager.default.fileExists(atPath: url.path)
     if exists {
@@ -577,44 +502,6 @@ func playAudioFile(at url: URL) {
     
     private func getCurrentLocation() -> CLLocationCoordinate2D? {
         return locationManager?.currentLocation
-    }
-    
-    private func startAudioLevelMonitoring() {
-        audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            self?.checkAudioLevel()
-        }
-    }
-
-    private func checkAudioLevel() {
-        guard let recorder = audioRecorder else { return }
-        
-        recorder.updateMeters()
-        let averagePower = recorder.averagePower(forChannel: 0)
-        let peakPower = recorder.peakPower(forChannel: 0)
-        
-        let averageLevel = pow(10.0, averagePower / 20.0)
-        let peakLevel = pow(10.0, peakPower / 20.0)
-        
-        // More sensitive threshold for voice detection
-        if averageLevel > 0.0005 || peakLevel > 0.005 {
-            resetSilenceTimer()
-        }
-    }
-
-    private func resetSilenceTimer() {
-        silenceTimer?.invalidate()
-        silenceTimer = nil
-        
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceDetectionDuration, repeats: false) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.stopRecordingAndReturnToListening()
-            }
-        }
-    }
-
-    private func stopAudioLevelMonitoring() {
-        audioLevelTimer?.invalidate()
-        audioLevelTimer = nil
     }
     
     // MARK: - Speech Recognition
@@ -858,6 +745,32 @@ extension UnifiedAudioManager: SFSpeechRecognizerDelegate {
                 self.errorMessage = "语音识别服务不可用"
             }
         }
+    }
+}
+
+
+private func createRecordingsDirectory() throws -> URL {
+    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let recordingsURL = documentsPath.appendingPathComponent("SiriRecordings")
+    if !FileManager.default.fileExists(atPath: recordingsURL.path) {
+        try FileManager.default.createDirectory(at: recordingsURL, withIntermediateDirectories: true)
+    }
+    return recordingsURL
+}
+
+private func listRecordingsDirectory() {
+    // Debug method - can be removed in production
+    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let recordingsURL = documentsPath.appendingPathComponent("SiriRecordings")
+    
+    do {
+        let files = try FileManager.default.contentsOfDirectory(at: recordingsURL, includingPropertiesForKeys: nil)
+        print("📁 Recordings directory contains \(files.count) files")
+        for file in files {
+            print("📄 \(file.lastPathComponent)")
+        }
+    } catch {
+        print("❌ Error listing recordings directory: \(error)")
     }
 }
 

@@ -48,6 +48,11 @@ struct AutoVoiceTestView: View {
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                 
+                                Text("Recording will auto-stop after 3 minutes")
+                                    .font(.system(size: 10, weight: .ultraLight))
+                                    .foregroundColor(.gray.opacity(0.7))
+                                    .multilineTextAlignment(.center)
+                                
                                 Text("Or use the buttons below")
                                     .font(.system(size: 10, weight: .ultraLight))
                                     .foregroundColor(.gray.opacity(0.7))
