@@ -5,10 +5,16 @@
 	<key>INIntentsRestrictedWhileLocked</key>
 	<array>
 		<string>ReportDrivingTestIntent</string>
+		<string>StartDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
 	</array>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>ReportDrivingTestIntent</string>
+		<string>StartDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -31,7 +37,70 @@
 	</dict>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>ReportDrivingTestIntentIntent</string>
+		<string>StartDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
 	</array>
+	<key>IntentsSupported</key>
+	<array>
+		<string>StartDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>location</string>
+		<string>voip</string>
+	</array>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>carplay</string>
+		<string>location-services</string>
+		<string>microphone</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>CPTemplateApplicationSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>CPTemplateApplicationScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>CarPlay</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
+				</dict>
+			</array>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>Phone</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -25,7 +25,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
-    private var maxDurationTimer: Timer?
     private var playbackTimer: Timer?
     private var audioLevelTimer: Timer?
     private var currentSegmentNumber = 1
@@ -36,6 +35,10 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var audioEngine: AVAudioEngine?
     private var inputNode: AVAudioInputNode?
     
+    // Siri interruption handling
+    private var wasRecordingBeforeInterruption = false
+    private var shouldStopAfterInterruption = false
+    
     private let permissionManager = PermissionManager.shared
     private var locationManager: LocationManager?
     private var speechRecognizer: SFSpeechRecognizer?
@@ -44,12 +47,77 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     
     override init() {
         super.init()
+        setupAudioSessionInterruptionHandling()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.setupSiriKit()
             self.setupAudioSession()
         }
     }
-
+    
+    private func setupAudioSessionInterruptionHandling() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleAudioSessionInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            print("🔇 Audio session interruption began")
+            wasRecordingBeforeInterruption = isRecording
+            if isRecording {
+                // Pause recording but don't stop it yet
+                audioRecorder?.pause()
+                print("⏸️ Recording paused due to interruption")
+                
+                // Also pause speech recognition to prevent capturing Siri commands
+                if isRecognizingSpeech {
+                    stopSpeechRecognition()
+                    print("⏸️ Speech recognition paused due to interruption")
+                }
+            }
+            
+        case .ended:
+            print("🔊 Audio session interruption ended")
+            guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else {
+                return
+            }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            
+            if options.contains(.shouldResume) && wasRecordingBeforeInterruption {
+                // Resume recording if it was active before interruption
+                audioRecorder?.record()
+                print("▶️ Recording resumed after interruption")
+                
+                // Resume speech recognition if it was active before interruption
+                if !isRecognizingSpeech {
+                    startSpeechRecognition()
+                    print("▶️ Speech recognition resumed after interruption")
+                }
+            }
+            
+            // Check if we should stop recording after interruption
+            if shouldStopAfterInterruption {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.stopRecording()
+                    self.shouldStopAfterInterruption = false
+                }
+            }
+            
+        @unknown default:
+            break
+        }
+    }
+    
     private func setupSiriKit() {
         let currentStatus = INPreferences.siriAuthorizationStatus()
         
@@ -69,12 +137,49 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     }
     
     private func setupAudioSession() {
+        configureAudioSessionForDevice()
+    }
+    
+    func configureAudioSessionForCarPlay() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
+            // Configure audio session for CarPlay with enhanced compatibility
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .measurement,
+                options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .allowBluetoothA2DP,
+                    .interruptSpokenAudioAndMixWithOthers
+                ]
+            )
             try audioSession.setActive(true)
+            print("🚗 Audio session configured for CarPlay")
+        } catch {
+            errorMessage = "CarPlay音频会话设置失败: \(error.localizedDescription)"
+            print("❌ CarPlay audio session setup error: \(error)")
+        }
+    }
+    
+    func configureAudioSessionForDevice() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            // Configure audio session to allow Siri interruptions
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .measurement,
+                options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .interruptSpokenAudioAndMixWithOthers
+                ]
+            )
+            try audioSession.setActive(true)
+            print("✅ Audio session configured for Siri coexistence")
         } catch {
             errorMessage = "音频会话设置失败: \(error.localizedDescription)"
+            print("❌ Audio session setup error: \(error)")
         }
     }
     
@@ -111,7 +216,16 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
+            // Configure audio session to allow Siri interruptions
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .measurement,
+                options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .interruptSpokenAudioAndMixWithOthers
+                ]
+            )
             try audioSession.setActive(true)
             
             let fileName = "siri_segment_\(currentSegmentNumber)_\(Date().timeIntervalSince1970).m4a"
@@ -143,12 +257,7 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             setupSpeechRecognition()
             startSpeechRecognition()
             
-            // Start max duration timer (180 seconds)
-            maxDurationTimer = Timer.scheduledTimer(withTimeInterval: maxRecordingDuration, repeats: false) { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.stopRecording()
-                }
-            }
+            print("🎤 Recording started with Siri interruption support")
             
         } catch {
             errorMessage = "录音启动失败: \(error.localizedDescription)"
@@ -156,6 +265,15 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         }
     }
     
+    // Method to handle Siri stop command during recording
+    func handleSiriStopCommand() {
+        print("🛑 Siri stop command received during recording")
+        if isRecording {
+            shouldStopAfterInterruption = true
+            print("⏹️ Will stop recording after current interruption ends")
+        }
+    }
+
     func stopRecording() {
         guard isRecording, let recorder = audioRecorder else { 
             return 
@@ -165,8 +283,8 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         stopSpeechRecognition()
         
         // Stop max duration timer
-        maxDurationTimer?.invalidate()
-        maxDurationTimer = nil
+        // maxDurationTimer?.invalidate() // This timer is removed, so no need to invalidate
+        // maxDurationTimer = nil
         
         recorder.stop()
         stopRecordingTimer()
@@ -379,7 +497,7 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         
         startRecording()
         
-        // Removed maxDurationTimer = Timer.scheduledTimer(...)
+        // Removed max duration timer - recording will only stop via Siri command
     }
     
     private func stopRecordingAndReturnToListening() {
@@ -552,7 +670,7 @@ func playAudioFile(at url: URL) {
         }
         
         speechRecognizer.delegate = self
-        print("🎤 Speech recognition setup completed with locale: \(speechRecognizer.locale.identifier)")
+        print("�� Speech recognition setup completed with locale: \(speechRecognizer.locale.identifier)")
     }
     
     private func startSpeechRecognition() {
@@ -689,6 +807,29 @@ func playAudioFile(at url: URL) {
             testNumber: 1,
             startCoordinate: startCoordinate
         )
+    }
+    
+    // MARK: - Public Location Methods
+    
+    /**
+     * BEHAVIOR: Returns the current location authorization status
+     * EXCEPTIONS: None
+     * RETURNS: CLAuthorizationStatus - Current location permission status
+     * PARAMETERS: None
+     */
+    func getLocationAuthorizationStatus() -> CLAuthorizationStatus {
+        return locationManager?.authorizationStatus ?? .notDetermined
+    }
+    
+    /**
+     * BEHAVIOR: Returns whether location services are authorized
+     * EXCEPTIONS: None
+     * RETURNS: Bool - True if location is authorized, false otherwise
+     * PARAMETERS: None
+     */
+    func isLocationAuthorized() -> Bool {
+        let status = getLocationAuthorizationStatus()
+        return status == .authorizedWhenInUse || status == .authorizedAlways
     }
 }
 

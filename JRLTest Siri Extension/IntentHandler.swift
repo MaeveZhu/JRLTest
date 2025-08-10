@@ -1,10 +1,3 @@
-//
-//  IntentHandler.swift
-//  JRLTest Siri Extension
-//
-//  Created by whosyihan on 8/4/25.
-//
-
 import AppIntents
 import CoreLocation
 
@@ -93,6 +86,14 @@ struct StopDrivingTestAudioIntent: AppIntent {
         // Post notification to stop recording
         DispatchQueue.main.async {
             print("🛑 StopDrivingTestAudioIntent: Posting SiriStopRecording notification")
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SiriStopRecording"),
+                object: nil
+            )
+        }
+        
+        // Also try to post to the main app's notification center
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             NotificationCenter.default.post(
                 name: NSNotification.Name("SiriStopRecording"),
                 object: nil

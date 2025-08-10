@@ -1,10 +1,3 @@
-//
-//  SharedModels.swift
-//  JRLTest Siri Extension
-//
-//  Created by whosyihan on 8/4/25.
-//
-
 import Foundation
 import CoreLocation
 

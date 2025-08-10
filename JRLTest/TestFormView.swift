@@ -21,6 +21,7 @@ struct TestFormView: View {
     @State private var pulseScale: CGFloat = 1.0
     
     @StateObject private var locationManager = LocationManager()
+    @EnvironmentObject var carPlayManager: CarPlayManager
     
     let availableSectionEOptions = [
         "Option 1",
@@ -34,7 +35,11 @@ struct TestFormView: View {
         NavigationView {
             ZStack {
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.02)]),
+                    gradient: Gradient(colors: [
+                        Color.white, 
+                        Color.gray.opacity(0.02),
+                        Color.blue.opacity(0.01)
+                    ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -43,11 +48,16 @@ struct TestFormView: View {
                 abstractBackgroundElements
                 
                 ScrollView {
-                    VStack(spacing: 40) {
+                    VStack(spacing: carPlayManager.isCarPlayConnected ? 30 : 40) {
                         headerSection
                         formContainer
+                        
+                        // CarPlay quick start section
+                        if carPlayManager.isCarPlayConnected {
+                            carPlayQuickStartSection
+                        }
                     }
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal, carPlayManager.isCarPlayConnected ? 25 : 30)
                     .padding(.top, 20)
                 }
             }
@@ -76,6 +86,84 @@ struct TestFormView: View {
         }
     }
     
+    private var carPlayQuickStartSection: some View {
+        VStack(spacing: 20) {
+            Text("CarPlay 快速开始")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(.blue)
+            
+            HStack(spacing: 20) {
+                quickStartButton(
+                    action: {
+                        startQuickTest()
+                    },
+                    icon: "play.circle.fill",
+                    title: "快速测试",
+                    color: .green
+                )
+                
+                quickStartButton(
+                    action: {
+                        startRecordingOnly()
+                    },
+                    icon: "record.circle.fill",
+                    title: "仅录音",
+                    color: .red
+                )
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 15)
+        .background(Color.blue.opacity(0.05))
+        .cornerRadius(15)
+    }
+    
+    private func quickStartButton(
+        action: @escaping () -> Void,
+        icon: String,
+        title: String,
+        color: Color
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 36, weight: .medium))
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 100, height: 100)
+            .background(Color.white)
+            .cornerRadius(15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(color.opacity(0.3), lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func startQuickTest() {
+        // Auto-fill form with default values for quick testing
+        sectionA = "CARPLAY_TEST"
+        sectionB = UUID().uuidString
+        sectionC = UUID().uuidString
+        sectionD = "CarPlay Quick Test"
+        selectedSectionE = "Option 1"
+        sectionF = 1
+        
+        // Start test immediately
+        startTest()
+    }
+    
+    private func startRecordingOnly() {
+        // Start recording without form data
+        UnifiedAudioManager.shared.startSiriDrivingTest()
+        showingRecordingView = true
+    }
+    
     private var abstractBackgroundElements: some View {
         ZStack {
             Circle()
@@ -96,381 +184,168 @@ struct TestFormView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 25) {
+        VStack(spacing: carPlayManager.isCarPlayConnected ? 20 : 25) {
             VStack(spacing: 8) {
-                Text("XRAY Test Configuration")
-                    .font(.system(size: 32, weight: .ultraLight))
+                Text("测试表单")
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 32 : 28, weight: .light))
                     .foregroundColor(.black)
                 
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 80, height: 1)
-                
-                Text("Configure your XRAY test parameters")
-                    .font(.system(size: 14, weight: .ultraLight))
+                Text("填写测试信息")
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16, weight: .ultraLight))
                     .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
             }
+            
+            Rectangle()
+                .fill(Color.black)
+                .frame(width: 80, height: 1)
+                .scaleEffect(x: pulseScale, anchor: .center)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulseScale)
         }
     }
     
     private var formContainer: some View {
-        VStack(spacing: 35) {
-            sectionAInput
-            sectionBInput
-            sectionCInput
-            sectionDInput
-            sectionESelection
-            sectionFInput
-            nextButtonSection
-        }
-        .padding(.vertical, 40)
-        .padding(.horizontal, 30)
-        .background(Color.white)
-        .overlay(
-            Rectangle()
-                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-        )
-    }
-    
-    private var sectionAInput: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Operator CDSID")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
-                
-            
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.02))
-                    .frame(height: 50)
-                    .overlay(
-                        Rectangle()
-                            .stroke(sectionA.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
-                    )
-                
-                TextField("Enter Operator CDSID", text: $sectionA)
-                    .font(.system(size: 16, weight: .light, design: .monospaced))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    private var sectionBInput: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Driver CDSID")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
-                
-            
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.02))
-                    .frame(height: 50)
-                    .overlay(
-                        Rectangle()
-                            .stroke(sectionB.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
-                    )
-                
-                TextField("Enter Driver CDSID", text: $sectionB)
-                    .font(.system(size: 16, weight: .light, design: .monospaced))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    private var sectionCInput: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Test Execution")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
-                
-            
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.02))
-                    .frame(height: 50)
-                    .overlay(
-                        Rectangle()
-                            .stroke(sectionC.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
-                    )
-                
-                TextField("Enter Test Execution", text: $sectionC)
-                    .font(.system(size: 16, weight: .light, design: .monospaced))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    private var sectionESelection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Test Type")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
-                
-            
-            sectionEPicker
-        }
-    }
-    
-    private var sectionEPicker: some View {
-        Menu {
-            ForEach(availableSectionEOptions, id: \.self) { option in
-                Button(option) {
-                    selectedSectionE = option
-                }
-            }
-        } label: {
-            HStack {
-                Text(selectedSectionE)
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .ultraLight))
-                    .foregroundColor(.gray)
-            }
-            .padding(.horizontal, 20)
-            .frame(height: 50)
-            .background(Color.gray.opacity(0.02))
-            .overlay(
-                Rectangle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        VStack(spacing: carPlayManager.isCarPlayConnected ? 25 : 30) {
+            formField(
+                title: "Section A",
+                placeholder: "输入 Section A",
+                text: $sectionA
             )
-        }
-    }
-    
-    private var sectionDInput: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Test Procedure")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
-                
             
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.02))
-                    .frame(height: 50)
-                    .overlay(
-                        Rectangle()
-                            .stroke(sectionD.isEmpty ? Color.gray.opacity(0.2) : Color.black.opacity(0.3), lineWidth: 1)
-                    )
-                
-                TextField("Enter Test Procedure", text: $sectionD)
-                    .font(.system(size: 16, weight: .light, design: .monospaced))
+            formField(
+                title: "Section B", 
+                placeholder: "输入 Section B",
+                text: $sectionB
+            )
+            
+            formField(
+                title: "Section C",
+                placeholder: "输入 Section C", 
+                text: $sectionC
+            )
+            
+            formField(
+                title: "Section D",
+                placeholder: "输入 Section D",
+                text: $sectionD
+            )
+            
+            // CarPlay-optimized picker
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Section E")
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16, weight: .medium))
                     .foregroundColor(.black)
-                    .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    private var sectionFInput: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Iteration ID(#)")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(.black)
                 
+                Menu {
+                    ForEach(availableSectionEOptions, id: \.self) { option in
+                        Button(option) {
+                            selectedSectionE = option
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(selectedSectionE)
+                            .foregroundColor(.black)
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, carPlayManager.isCarPlayConnected ? 20 : 15)
+                    .padding(.vertical, carPlayManager.isCarPlayConnected ? 18 : 15)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
             
-            HStack(spacing: 20) {
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.02))
-                        .frame(height: 50)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        )
+            // CarPlay-optimized number input
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Section F")
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16, weight: .medium))
+                    .foregroundColor(.black)
+                
+                HStack {
+                    Button("-") {
+                        if sectionF > 1 {
+                            sectionF -= 1
+                        }
+                    }
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 24 : 20, weight: .medium))
+                    .foregroundColor(.blue)
+                    .frame(width: carPlayManager.isCarPlayConnected ? 50 : 40, height: carPlayManager.isCarPlayConnected ? 50 : 40)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
                     
-                    TextField("Value", value: $sectionF, format: .number)
-                        .font(.system(size: 16, weight: .light, design: .monospaced))
-                        .foregroundColor(.black)
-                        .keyboardType(.numberPad)
+                    Text("\(sectionF)")
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 24 : 20, weight: .medium))
+                        .frame(minWidth: 60)
                         .padding(.horizontal, 20)
-                }
-                
-                VStack(spacing: 8) {
-                    Button(action: { sectionF += 1 }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .ultraLight))
-                            .foregroundColor(.gray)
-                            .frame(width: 40, height: 20)
-                            .background(Color.gray.opacity(0.05))
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                    }
                     
-                    Button(action: { 
-                        if sectionF > 0 { sectionF -= 1 }
-                    }) {
-                        Image(systemName: "minus")
-                            .font(.system(size: 12, weight: .ultraLight))
-                            .foregroundColor(.gray)
-                            .frame(width: 40, height: 20)
-                            .background(Color.gray.opacity(0.05))
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
+                    Button("+") {
+                        sectionF += 1
                     }
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 24 : 20, weight: .medium))
+                    .foregroundColor(.blue)
+                    .frame(width: carPlayManager.isCarPlayConnected ? 50 : 40, height: carPlayManager.isCarPlayConnected ? 50 : 40)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
                 }
             }
-        }
-    }
-    
-    private var nextButtonSection: some View {
-        VStack(spacing: 20) {
-            Button(action: {
-                checkPermissionsAndStart()
-            }) {
-                HStack(spacing: 15) {
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: 2, height: 20)
-                        .scaleEffect(y: pulseScale)
-                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
-                    
-                    Text("Next")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(.white)
-                        
-                    
-                    Spacer()
-                    
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .ultraLight))
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal, 30)
-                .padding(.vertical, 20)
-                .background(
-                    Rectangle()
-                        .fill(isFormComplete ? Color.black : Color.gray.opacity(0.3))
-                )
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-                )
-            }
-            .disabled(!isFormComplete)
-            .buttonStyle(PlainButtonStyle())
             
-            Text("Ensure all fields are completed before proceeding")
-                .font(.system(size: 12, weight: .ultraLight))
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-        }
-    }
-    
-    // Computed property to check if form is complete
-    private var isFormComplete: Bool {
-        return !sectionA.isEmpty && 
-               !sectionB.isEmpty && 
-               !sectionC.isEmpty && 
-               !sectionD.isEmpty && 
-               sectionF > 0
-    }
-
-    private var recordingView: some View {
-        AutoVoiceTestView(
-            vin: sectionA, // Using sectionA as VIN
-            testExecutionId: sectionB, // Using sectionB as testExecutionId
-            tag: selectedSectionE, // Using selectedSectionE as tag
-            startCoordinate: startCoordinate,
-            showingResultsView: $showingResultsView
-        )
-    }
-    
-    
-    private var locationPermissionButtons: some View {
-        Group {
-            Button("允许") {
-                locationManager.requestLocationPermission()
+            // CarPlay-optimized start button
+            Button(action: startTest) {
+                HStack {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 24 : 20))
+                    Text("开始测试")
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 20 : 18, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: carPlayManager.isCarPlayConnected ? 60 : 50)
+                .background(Color.blue)
+                .cornerRadius(12)
             }
-            Button("取消", role: .cancel) { }
+            .disabled(sectionA.isEmpty || sectionB.isEmpty || sectionC.isEmpty || sectionD.isEmpty)
+            .opacity(sectionA.isEmpty || sectionB.isEmpty || sectionC.isEmpty || sectionD.isEmpty ? 0.5 : 1.0)
         }
     }
     
-    private var locationPermissionMessage: some View {
-        Text("需要位置权限来记录测试时的GPS坐标")
-    }
-    
-    private var microphonePermissionButtons: some View {
-        Group {
-            Button("允许") {
-                requestMicrophonePermission()
-            }
-            Button("取消", role: .cancel) { }
+    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16, weight: .medium))
+                .foregroundColor(.black)
+            
+            TextField(placeholder, text: text)
+                .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16))
+                .padding(.horizontal, carPlayManager.isCarPlayConnected ? 20 : 15)
+                .padding(.vertical, carPlayManager.isCarPlayConnected ? 18 : 15)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
         }
     }
     
-    private var microphonePermissionMessage: some View {
-        Text("需要麦克风权限来进行语音录音和语音识别")
-    }
-    
-    private var permissionButtons: some View {
-        Button("确定") { }
-    }
-    
-    private var permissionMessage: some View {
-        Text(permissionAlertMessage)
-    }
-    
-    // MARK: - Methods
-    
-    private func startAnimations() {
-        withAnimation {
-            pulseScale = 1.2
+    private func startTest() {
+        guard !sectionA.isEmpty && !sectionB.isEmpty && !sectionC.isEmpty && !sectionD.isEmpty else {
+            return
         }
         
-        withAnimation(.linear(duration: 40).repeatForever(autoreverses: false)) {
-            animationPhase = 360
+        // Check permissions first
+        if !UnifiedAudioManager.shared.checkPermissions() {
+            permissionAlertMessage = UnifiedAudioManager.shared.getPermissionStatus()
+            showingPermissionAlert = true
+            return
         }
-    }
-    
-    private func checkPermissionsAndStart() {
-        // 记录起始GPS坐标
+        
+        // Get current location
         startCoordinate = locationManager.currentLocation
         
-        // 检查位置权限
-        if locationManager.locationStatus != .available {
-            showingLocationPermissionAlert = true
-            return
-        }
-        
-        // 检查麦克风权限
-        let microphoneStatus = AVAudioSession.sharedInstance().recordPermission
-        if microphoneStatus != .granted {
-            showingMicrophonePermissionAlert = true
-            return
-        }
-        
-        // 检查语音识别权限
-        let speechStatus = SFSpeechRecognizer.authorizationStatus()
-        if speechStatus != .authorized {
-            SFSpeechRecognizer.requestAuthorization { status in
-                DispatchQueue.main.async {
-                    if status == .authorized {
-                        self.startVoiceControlledTest()
-                    } else {
-                        self.permissionAlertMessage = "语音识别权限被拒绝，无法进行语音控制测试"
-                        self.showingPermissionAlert = true
-                    }
-                }
-            }
-        } else {
-            startVoiceControlledTest()
-        }
-    }
-
-    private func startVoiceControlledTest() {
-        // Start voice-controlled test session with all form fields
+        // Start test session
         UnifiedAudioManager.shared.startTestSession(
             operatorCDSID: sectionA,
             driverCDSID: sectionB,
@@ -481,27 +356,77 @@ struct TestFormView: View {
             startCoordinate: startCoordinate
         )
         
-        // Navigate to voice recording view
+        // Start recording
+        UnifiedAudioManager.shared.startRecordingWithCoordinate()
+        
+        // Show recording view
         showingRecordingView = true
     }
     
-    private func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    // 权限获取成功，可以开始
-                    self.showingRecordingView = true
-                } else {
-                    self.permissionAlertMessage = "麦克风权限被拒绝，无法进行录音"
-                    self.showingPermissionAlert = true
-                }
+    private var recordingView: some View {
+        AutoVoiceTestView(
+            operatorCDSID: sectionA,
+            driverCDSID: sectionB,
+            testExecution: sectionC,
+            testProcedure: sectionD,
+            testType: selectedSectionE,
+            testNumber: sectionF,
+            startCoordinate: startCoordinate,
+            showingResultsView: $showingResultsView
+        )
+    }
+    
+    private var locationPermissionButtons: some View {
+        Group {
+            Button("设置") {
+                UnifiedAudioManager.shared.openSettings()
             }
+            Button("取消", role: .cancel) { }
+        }
+    }
+    
+    private var locationPermissionMessage: some View {
+        Text("需要位置权限来记录测试位置信息")
+    }
+    
+    private var microphonePermissionButtons: some View {
+        Group {
+            Button("设置") {
+                UnifiedAudioManager.shared.openSettings()
+            }
+            Button("取消", role: .cancel) { }
+        }
+    }
+    
+    private var microphonePermissionMessage: some View {
+        Text("需要麦克风权限来录制音频")
+    }
+    
+    private var permissionButtons: some View {
+        Group {
+            Button("设置") {
+                UnifiedAudioManager.shared.openSettings()
+            }
+            Button("取消", role: .cancel) { }
+        }
+    }
+    
+    private var permissionMessage: some View {
+        Text(permissionAlertMessage)
+    }
+    
+    private func startAnimations() {
+        withAnimation(.linear(duration: 40).repeatForever(autoreverses: false)) {
+            animationPhase = 360
+        }
+        
+        withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+            pulseScale = 1.1
         }
     }
 }
 
-struct TestFormView_Previews: PreviewProvider {
-    static var previews: some View {
-        TestFormView()
-    }
+#Preview {
+    TestFormView()
+        .environmentObject(CarPlayManager.shared)
 } 

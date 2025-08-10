@@ -1,10 +1,3 @@
-//
-//  IntentViewController.swift
-//  JRLTest Siri ExtensionUI
-//
-//  Created by whosyihan on 8/4/25.
-//
-
 import IntentsUI
 
 // As an example, this extension's Info.plist has been configured to handle interactions for INSendMessageIntent.

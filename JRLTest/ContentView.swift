@@ -5,6 +5,9 @@ struct ContentView: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var hasError = false
     @State private var errorMessage = ""
+    @EnvironmentObject var carPlayManager: CarPlayManager
+    @State private var showingCarPlayTest = false
+    @StateObject private var carPlayIntegration = CarPlayIntegrationManager.shared
     
     var body: some View {
         Group {
@@ -22,8 +25,13 @@ struct ContentView: View {
     private var mainView: some View {
         NavigationView {
             ZStack {
+                // CarPlay-optimized background
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.white, Color.gray.opacity(0.05)]),
+                    gradient: Gradient(colors: [
+                        Color.white,
+                        Color.gray.opacity(0.05),
+                        Color.blue.opacity(0.02)
+                    ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -31,14 +39,14 @@ struct ContentView: View {
                 
                 abstractBackgroundElements
                 
-                VStack(spacing: 60) {
+                VStack(spacing: carPlayManager.isCarPlayConnected ? 40 : 60) {
                     VStack(spacing: 20) {
                         Text("JRL")
-                            .font(.system(size: 48, weight: .ultraLight, design: .default))
+                            .font(.system(size: carPlayManager.isCarPlayConnected ? 56 : 48, weight: .ultraLight, design: .default))
                             .foregroundColor(.black)
                         
                         Text("TEST")
-                            .font(.system(size: 48, weight: .thin, design: .default))
+                            .font(.system(size: carPlayManager.isCarPlayConnected ? 56 : 48, weight: .thin, design: .default))
                             .foregroundColor(.gray)
                         
                         Rectangle()
@@ -48,7 +56,23 @@ struct ContentView: View {
                             .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulseScale)
                     }
                     
-                    VStack(spacing: 30) {
+                    // CarPlay status indicator
+                    if carPlayManager.isCarPlayConnected {
+                        HStack {
+                            Image(systemName: "car.fill")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 20))
+                            Text("CarPlay Connected")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(20)
+                    }
+                    
+                    VStack(spacing: carPlayManager.isCarPlayConnected ? 20 : 30) {
                         navigationCard(
                             destination: TestFormView(),
                             icon: "doc.text",
@@ -72,15 +96,88 @@ struct ContentView: View {
                             subtitle: "访问网站页面",
                             delay: 0.4
                         )
+                        
+                        // CarPlay-specific quick actions
+                        if carPlayManager.isCarPlayConnected {
+                            carPlayQuickActions
+                        }
+
+                        
+                        // CarPlay test button
+                        carPlayTestSection
                     }
                     
                     Spacer()
                 }
-                .padding(.horizontal, 40)
-                .padding(.top, 60)
+                .padding(.horizontal, carPlayManager.isCarPlayConnected ? 30 : 40)
+                .padding(.top, carPlayManager.isCarPlayConnected ? 40 : 60)
             }
             .navigationBarHidden(true)
         }
+        .sheet(isPresented: $showingCarPlayTest) {
+            CarPlayTestView()
+        }
+    }
+    
+    private var carPlayQuickActions: some View {
+        VStack(spacing: 15) {
+            Text("CarPlay 快捷操作")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.blue)
+            
+            HStack(spacing: 20) {
+                quickActionButton(
+                    action: {
+                        UnifiedAudioManager.shared.startRecordingWithCoordinate()
+                    },
+                    icon: "record.circle.fill",
+                    title: "开始录音",
+                    color: .red
+                )
+                
+                quickActionButton(
+                    action: {
+                        if UnifiedAudioManager.shared.isRecording {
+                            UnifiedAudioManager.shared.handleSiriStopCommand()
+                        }
+                    },
+                    icon: "stop.circle.fill",
+                    title: "停止录音",
+                    color: .orange
+                )
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 15)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(15)
+    }
+    
+    private func quickActionButton(
+        action: @escaping () -> Void,
+        icon: String,
+        title: String,
+        color: Color
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 80, height: 80)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(color.opacity(0.3), lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     private var errorView: some View {
@@ -140,39 +237,39 @@ struct ContentView: View {
         delay: Double
     ) -> some View {
         NavigationLink(destination: destination) {
-            HStack(spacing: 20) {
+            HStack(spacing: carPlayManager.isCarPlayConnected ? 25 : 20) {
                 ZStack {
                     Rectangle()
                         .fill(Color.gray.opacity(0.05))
-                        .frame(width: 60, height: 60)
+                        .frame(width: carPlayManager.isCarPlayConnected ? 70 : 60, height: carPlayManager.isCarPlayConnected ? 70 : 60)
                         .overlay(
                             Rectangle()
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
                     
                     Image(systemName: icon)
-                        .font(.system(size: 24, weight: .ultraLight))
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 28 : 24, weight: .ultraLight))
                         .foregroundColor(.black)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 18, weight: .light))
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 20 : 18, weight: .light))
                         .foregroundColor(.black)
                     
                     Text(subtitle)
-                        .font(.system(size: 14, weight: .ultraLight))
+                        .font(.system(size: carPlayManager.isCarPlayConnected ? 16 : 14, weight: .ultraLight))
                         .foregroundColor(.gray)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 16, weight: .ultraLight))
+                    .font(.system(size: carPlayManager.isCarPlayConnected ? 18 : 16, weight: .ultraLight))
                     .foregroundColor(.gray)
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 25)
+            .padding(.horizontal, carPlayManager.isCarPlayConnected ? 35 : 30)
+            .padding(.vertical, carPlayManager.isCarPlayConnected ? 30 : 25)
             .background(Color.white)
             .overlay(
                 Rectangle()
@@ -181,6 +278,44 @@ struct ContentView: View {
             .opacity(1.0)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var carPlayIntegrationSection: some View {
+        VStack(spacing: 15) {
+            Text("CarPlay 集成状态")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.blue)
+            
+            HStack {
+                Image(systemName: "car.fill")
+                    .foregroundColor(.blue)
+                Text("CarPlay 可用")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.blue)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 15)
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(15)
+    }
+    
+    private var carPlayTestSection: some View {
+        VStack(spacing: 15) {
+            Text("CarPlay 测试")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.orange)
+            
+            Button("测试 CarPlay 功能") {
+                showingCarPlayTest = true
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 15)
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(15)
     }
     
     private func startAnimations() {
@@ -201,4 +336,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(CarPlayManager.shared)
 }

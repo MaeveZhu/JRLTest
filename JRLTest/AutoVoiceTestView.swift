@@ -2,9 +2,12 @@ import SwiftUI
 import CoreLocation
 
 struct AutoVoiceTestView: View {
-    let vin: String
-    let testExecutionId: String
-    let tag: String
+    let operatorCDSID: String
+    let driverCDSID: String
+    let testExecution: String
+    let testProcedure: String
+    let testType: String
+    let testNumber: Int
     let startCoordinate: CLLocationCoordinate2D?
     @Binding var showingResultsView: Bool
     
@@ -14,6 +17,7 @@ struct AutoVoiceTestView: View {
     @State private var animationPhase: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
     @State private var recordingPulse: CGFloat = 1.0
+    @State private var showingCompletionAlert = false
     
     var body: some View {
         NavigationView {
@@ -48,7 +52,7 @@ struct AutoVoiceTestView: View {
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                 
-                                Text("Recording will auto-stop after 3 minutes")
+                                Text("Recording will only stop via Siri command")
                                     .font(.system(size: 10, weight: .ultraLight))
                                     .foregroundColor(.gray.opacity(0.7))
                                     .multilineTextAlignment(.center)
@@ -136,6 +140,13 @@ struct AutoVoiceTestView: View {
                 .padding(.vertical, 15)
             }
         }
+        .alert("Test Session Completed", isPresented: $showingCompletionAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Test Session is ended! You can check it from the DrivingRecords View.")
+        }
         .onAppear {
             startAutoVoiceTest()
             startAnimations()
@@ -197,12 +208,12 @@ struct AutoVoiceTestView: View {
         }
         
         audioManager.startTestSession(
-            operatorCDSID: vin,
-            driverCDSID: testExecutionId,
-            testExecution: testExecutionId,
-            testProcedure: "Auto Voice Test",
-            testType: tag,
-            testNumber: 1,
+            operatorCDSID: operatorCDSID,
+            driverCDSID: driverCDSID,
+            testExecution: testExecution,
+            testProcedure: testProcedure,
+            testType: testType,
+            testNumber: testNumber,
             startCoordinate: startCoordinate
         )
     }
@@ -217,7 +228,7 @@ struct AutoVoiceTestView: View {
         audioManager.endTestSession()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            dismiss()
+            showingCompletionAlert = true
         }
     }
     
@@ -276,5 +287,3 @@ struct AutoVoiceTestView: View {
         )
     }
 }
-
-
