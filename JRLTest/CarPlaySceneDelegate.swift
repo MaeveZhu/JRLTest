@@ -48,9 +48,9 @@ import CarPlay
         // Create a simple list template
         let mainItems = [
             CPListItem(
-                text: "开始驾驶测试",
-                detailText: "启动新的测试会话",
-                image: UIImage(systemName: "car.fill"),
+                text: "MT Manager",
+                detailText: "IP + 5063",
+                image: UIImage(systemName: "circle.fill"),
                 accessoryType: .disclosureIndicator
             ) { [weak self] _, completion in
                 self?.handleStartDrivingTest(completion: completion)

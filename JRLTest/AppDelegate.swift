@@ -39,11 +39,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, CPTemplateApplicationSceneDe
         // Your CarPlay interface setup code here
         let mainItems = [
             CPListItem(
-                text: "开始驾驶测试",
-                detailText: "启动新的测试会话",
+                text: "MT Manager",
+                detailText: "启动MT Manager",
                 image: UIImage(systemName: "car.fill")
             ) { _, completion in
-                print("🚗 CarPlay: Start driving test requested")
+                print("准备启动")
                 completion()
             }
         ]
