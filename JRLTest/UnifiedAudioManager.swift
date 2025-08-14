@@ -27,7 +27,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     private var recordingStartTime: Date?
     private var maxDurationTimer: Timer?
     private var playbackTimer: Timer?
-    private var audioLevelTimer: Timer?
     private var currentSegmentNumber = 1
     private let maxRecordingDuration: TimeInterval = 180
     private var currentSegmentStartCoordinate: CLLocationCoordinate2D?
@@ -78,34 +77,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         }
     }
     
-    func startSiriDrivingTest() {
-        let siriStatus = INPreferences.siriAuthorizationStatus()
-        guard siriStatus == .authorized else {
-            errorMessage = "Siri权限未授权，请在设置中启用"
-            return
-        }
-        
-        guard permissionManager.allPermissionsGranted else {
-            errorMessage = permissionManager.getMissingPermissionsMessage()
-            return
-        }
-        
-        currentTestSession = TestSession(
-            operatorCDSID: "SIRI_TEST",
-            driverCDSID: UUID().uuidString,
-            testExecution: UUID().uuidString,
-            testProcedure: "SiriKit Test",
-            testType: "SiriKit Test",
-            testNumber: 1,
-            startCoordinate: nil,
-            startTime: Date()
-        )
-        recordingSegments = []
-        currentSegmentNumber = 1
-        
-        startRecording()
-    }
-    
     func startRecording() {
         guard !isRecording else { return }
         
@@ -114,7 +85,13 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true)
             
-            let fileName = "siri_segment_\(currentSegmentNumber)_\(Date().timeIntervalSince1970).m4a"
+            // Use timestamp for filename instead of segment number
+            let timestamp = Date()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+            let timestampString = dateFormatter.string(from: timestamp)
+            let fileName = "recording_\(timestampString).m4a"
+            
             let recordingsURL = try createRecordingsDirectory()
             let fileURL = recordingsURL.appendingPathComponent(fileName)
             
@@ -152,7 +129,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             
         } catch {
             errorMessage = "录音启动失败: \(error.localizedDescription)"
-            print("❌ Recording start error: \(error)")
         }
     }
     
@@ -176,7 +152,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             
             // Use recognized speech or indicate nothing was detected
             let speechText = recognizedSpeech.isEmpty ? "Nothing is detected" : recognizedSpeech
-            print("🎤 Final recognized speech: \(speechText)")
             
             let segment = RecordingSegment(
                 id: UUID(),
@@ -186,11 +161,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
                 startTime: startTime,
                 endTime: Date(),
                 operatorCDSID: session.operatorCDSID,
-                driverCDSID: session.driverCDSID,
-                testExecution: session.testExecution,
-                testProcedure: session.testProcedure,
-                testType: session.testType,
-                testNumber: session.testNumber,
                 startCoordinate: currentSegmentStartCoordinate,
                 endCoordinate: currentSegmentEndCoordinate,
                 recognizedSpeech: speechText
@@ -203,10 +173,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
             currentTestSession = updatedSession
             
             currentSegmentNumber += 1
-            
-            listRecordingsDirectory()
-        } else {
-            // Failed to create recording segment
         }
         
         audioRecorder = nil
@@ -218,9 +184,8 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         // Properly deactivate audio session
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            print("✅ Audio session deactivated")
         } catch {
-            print("❌ Error deactivating audio session: \(error)")
+            // Audio session deactivation failed
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -266,11 +231,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
                         startTime: segment.startTime,
                         endTime: segment.endTime,
                         operatorCDSID: segment.operatorCDSID,
-                        driverCDSID: segment.driverCDSID,
-                        testExecution: segment.testExecution,
-                        testProcedure: segment.testProcedure,
-                        testType: segment.testType,
-                        testNumber: segment.testNumber,
                         startCoordinate: segment.startCoordinate,
                         endCoordinate: segment.endCoordinate,
                         recognizedSpeech: segment.recognizedSpeech
@@ -329,14 +289,9 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         permissionManager.openSettings()
     }
     
-    func startTestSession(operatorCDSID: String, driverCDSID: String, testExecution: String, testProcedure: String, testType: String, testNumber: Int, startCoordinate: CLLocationCoordinate2D?) {
+    func startTestSession(operatorCDSID: String, startCoordinate: CLLocationCoordinate2D?) {
         currentTestSession = TestSession(
             operatorCDSID: operatorCDSID,
-            driverCDSID: driverCDSID,
-            testExecution: testExecution,
-            testProcedure: testProcedure,
-            testType: testType,
-            testNumber: testNumber,
             startCoordinate: startCoordinate,
             startTime: Date()
         )
@@ -378,97 +333,48 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         }
         
         startRecording()
-        
-        // Removed maxDurationTimer = Timer.scheduledTimer(...)
-    }
-    
-    private func stopRecordingAndReturnToListening() {
-        stopRecording()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.isListening = true
-        }
     }
 
-private func verifyAudioFile(_ url: URL) -> Bool {
-    let exists = FileManager.default.fileExists(atPath: url.path)
-    if exists {
-        print("✅ Audio file exists: \(url.lastPathComponent)")
-        
-        // Check file size
-        do {
-            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-            if let fileSize = attributes[.size] as? Int64 {
-                print("📁 File size: \(fileSize) bytes")
-                if fileSize == 0 {
-                    print("❌ File is empty")
-                    return false
-                }
-            }
-        } catch {
-            print("❌ Error checking file attributes: \(error)")
-            return false
-        }
-        
-        return true
-    } else {
-        print("❌ Audio file missing: \(url.path)")
-        return false
-    }
-}
-
-func playAudioFile(at url: URL) {
-    guard verifyAudioFile(url) else {
-        errorMessage = "音频文件不存在或为空: \(url.lastPathComponent)"
-        return
-    }
-    
-    stopPlayback()
-    
-    do {
-        // Configure audio session for playback
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playback, mode: .default)
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        
-        // Create audio player with error handling
-        audioPlayer = try AVAudioPlayer(contentsOf: url)
-        audioPlayer?.delegate = self
-        
-        // Check if audio player is valid
-        guard let player = audioPlayer, player.duration > 0 else {
-            errorMessage = "音频文件格式不支持或已损坏"
-            print("❌ Invalid audio file: duration = \(audioPlayer?.duration ?? 0)")
+    func playAudioFile(at url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            errorMessage = "音频文件不存在: \(url.lastPathComponent)"
             return
         }
         
-        player.prepareToPlay()
+        stopPlayback()
         
-        // Start playback
-        if player.play() {
-            isPlaying = true
-            currentPlaybackURL = url
-            playbackProgress = 0
-            startPlaybackTimer()
-            print("✅ Audio playback started: \(url.lastPathComponent), duration: \(player.duration)")
-        } else {
-            errorMessage = "音频播放启动失败"
-            print("❌ Failed to start audio playback")
-        }
-        
-    } catch {
-        errorMessage = "音频播放失败: \(error.localizedDescription)"
-        print("❌ Audio playback error: \(error)")
-        
-        // Try to get more specific error information
-        if let nsError = error as NSError? {
-            print("❌ Error domain: \(nsError.domain), code: \(nsError.code)")
-            print("❌ Error description: \(nsError.localizedDescription)")
+        do {
+            // Configure audio session for playback
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default)
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            
+            // Create audio player with error handling
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = self
+            
+            // Check if audio player is valid
+            guard let player = audioPlayer, player.duration > 0 else {
+                errorMessage = "音频文件格式不支持或已损坏"
+                return
+            }
+            
+            player.prepareToPlay()
+            
+            // Start playback
+            if player.play() {
+                isPlaying = true
+                currentPlaybackURL = url
+                playbackProgress = 0
+                startPlaybackTimer()
+            } else {
+                errorMessage = "音频播放启动失败"
+            }
+            
+        } catch {
+            errorMessage = "音频播放失败: \(error.localizedDescription)"
         }
     }
-}
-
-
     
     func stopPlayback() {
         audioPlayer?.stop()
@@ -520,14 +426,12 @@ func playAudioFile(at url: URL) {
                         self?.setupSpeechRecognizer()
                     } else {
                         self?.errorMessage = "语音识别权限被拒绝"
-                        print("❌ Speech recognition permission denied")
                     }
                 }
             }
             return
         case .denied, .restricted:
             errorMessage = "语音识别权限未授权"
-            print("❌ Speech recognition permission not granted: \(speechStatus.rawValue)")
             return
         @unknown default:
             errorMessage = "语音识别权限未知状态"
@@ -547,17 +451,14 @@ func playAudioFile(at url: URL) {
         
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
             errorMessage = "语音识别不可用"
-            print("❌ Speech recognition not available")
             return
         }
         
         speechRecognizer.delegate = self
-        print("🎤 Speech recognition setup completed with locale: \(speechRecognizer.locale.identifier)")
     }
     
     private func startSpeechRecognition() {
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            print("❌ Speech recognition not available")
             return
         }
         
@@ -567,7 +468,6 @@ func playAudioFile(at url: URL) {
             try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true)
         } catch {
-            print("❌ Failed to configure audio session for speech recognition: \(error)")
             return
         }
         
@@ -576,14 +476,12 @@ func playAudioFile(at url: URL) {
         inputNode = audioEngine?.inputNode
         
         guard let audioEngine = audioEngine, let inputNode = inputNode else {
-            print("❌ Failed to set up audio engine")
             return
         }
         
         // Create recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let recognitionRequest = recognitionRequest else {
-            print("❌ Failed to create recognition request")
             return
         }
         
@@ -591,7 +489,6 @@ func playAudioFile(at url: URL) {
         
         // Install tap on input node with compatible format
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        print("🎤 Using recording format: \(recordingFormat)")
         
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
@@ -600,9 +497,7 @@ func playAudioFile(at url: URL) {
         // Start audio engine
         do {
             try audioEngine.start()
-            print("✅ Audio engine started for speech recognition")
         } catch {
-            print("❌ Failed to start audio engine: \(error)")
             return
         }
         
@@ -610,7 +505,6 @@ func playAudioFile(at url: URL) {
         recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ Speech recognition error: \(error)")
                     return
                 }
                 
@@ -618,11 +512,9 @@ func playAudioFile(at url: URL) {
                     let recognizedText = result.bestTranscription.formattedString
                     if !recognizedText.isEmpty {
                         self?.recognizedSpeech = recognizedText
-                        print("🎤 Recognized speech: \(recognizedText)")
                     }
                     
                     if result.isFinal {
-                        print("✅ Speech recognition completed")
                         self?.stopSpeechRecognition()
                     }
                 }
@@ -630,7 +522,6 @@ func playAudioFile(at url: URL) {
         }
         
         isRecognizingSpeech = true
-        print("🎤 Speech recognition started")
     }
     
     private func stopSpeechRecognition() {
@@ -643,52 +534,9 @@ func playAudioFile(at url: URL) {
         if let audioEngine = audioEngine {
             audioEngine.stop()
             inputNode?.removeTap(onBus: 0)
-            print("🛑 Audio engine stopped")
         }
         audioEngine = nil
         inputNode = nil
-        
-        print("🛑 Speech recognition stopped")
-    }
-    
-    private func updateSpeechRecognitionWithAudioBuffer(_ buffer: AVAudioPCMBuffer) {
-        recognitionRequest?.append(buffer)
-    }
-    
-    func getSpeechRecognitionStatus() -> String {
-        guard let speechRecognizer = speechRecognizer else {
-            return "语音识别未初始化"
-        }
-        
-        if speechRecognizer.isAvailable {
-            return "语音识别可用"
-        } else {
-            return "语音识别不可用"
-        }
-    }
-    
-    func isSpeechRecognitionAvailable() -> Bool {
-        return speechRecognizer?.isAvailable ?? false
-    }
-    
-    // Method to manually test speech recognition
-    func testSpeechRecognition() {
-        print("🎤 Testing speech recognition...")
-        setupSpeechRecognition()
-        startSpeechRecognition()
-    }
-
-    // Legacy method for backward compatibility
-    func startTestSession(vin: String, testExecutionId: String, tag: String, startCoordinate: CLLocationCoordinate2D?) {
-        startTestSession(
-            operatorCDSID: vin,
-            driverCDSID: testExecutionId,
-            testExecution: testExecutionId,
-            testProcedure: "Legacy Test",
-            testType: tag,
-            testNumber: 1,
-            startCoordinate: startCoordinate
-        )
     }
 }
 
@@ -748,7 +596,6 @@ extension UnifiedAudioManager: SFSpeechRecognizerDelegate {
     }
 }
 
-
 private func createRecordingsDirectory() throws -> URL {
     let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     let recordingsURL = documentsPath.appendingPathComponent("SiriRecordings")
@@ -756,22 +603,6 @@ private func createRecordingsDirectory() throws -> URL {
         try FileManager.default.createDirectory(at: recordingsURL, withIntermediateDirectories: true)
     }
     return recordingsURL
-}
-
-private func listRecordingsDirectory() {
-    // Debug method - can be removed in production
-    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    let recordingsURL = documentsPath.appendingPathComponent("SiriRecordings")
-    
-    do {
-        let files = try FileManager.default.contentsOfDirectory(at: recordingsURL, includingPropertiesForKeys: nil)
-        print("📁 Recordings directory contains \(files.count) files")
-        for file in files {
-            print("📄 \(file.lastPathComponent)")
-        }
-    } catch {
-        print("❌ Error listing recordings directory: \(error)")
-    }
 }
 
  

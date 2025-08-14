@@ -50,10 +50,14 @@ struct ContentView: View {
                     
                     VStack(spacing: 30) {
                         navigationCard(
-                            destination: TestFormView(),
+                            destination: AutoVoiceTestView(
+                                vin: "AUTO_TEST",
+                                startCoordinate: nil,
+                                showingResultsView: .constant(false)
+                            ),
                             icon: "doc.text",
                             title: "开始测试",
-                            subtitle: "新建测试会话",
+                            subtitle: "直接进入语音监控",
                             delay: 0.1
                         )
                         
@@ -63,14 +67,6 @@ struct ContentView: View {
                             title: "行车记录", 
                             subtitle: "查看历史记录",
                             delay: 0.2
-                        )
-                        
-                        navigationCard(
-                            destination: WebBrowserView(),
-                            icon: "globe",
-                            title: "网页浏览器",
-                            subtitle: "访问网站页面",
-                            delay: 0.4
                         )
                     }
                     

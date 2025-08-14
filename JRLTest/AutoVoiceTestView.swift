@@ -3,8 +3,6 @@ import CoreLocation
 
 struct AutoVoiceTestView: View {
     let vin: String
-    let testExecutionId: String
-    let tag: String
     let startCoordinate: CLLocationCoordinate2D?
     @Binding var showingResultsView: Bool
     
@@ -189,20 +187,15 @@ struct AutoVoiceTestView: View {
         audioManager.requestPermissions { granted in
             DispatchQueue.main.async {
                 if granted {
-                    print("✅ AutoVoiceTestView: All permissions granted")
+                    // Permissions granted
                 } else {
-                    print("❌ AutoVoiceTestView: Some permissions still missing")
+                    // Some permissions still missing
                 }
             }
         }
         
         audioManager.startTestSession(
             operatorCDSID: vin,
-            driverCDSID: testExecutionId,
-            testExecution: testExecutionId,
-            testProcedure: "Auto Voice Test",
-            testType: tag,
-            testNumber: 1,
             startCoordinate: startCoordinate
         )
     }
@@ -276,5 +269,3 @@ struct AutoVoiceTestView: View {
         )
     }
 }
-
-

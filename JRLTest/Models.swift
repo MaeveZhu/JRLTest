@@ -3,22 +3,15 @@ import CoreLocation
 
 struct TestSession: Identifiable, Codable {
     let id = UUID()
-    let operatorCDSID: String  // sectionA
-    let driverCDSID: String    // sectionB
-    let testExecution: String  // sectionC
-    let testProcedure: String  // sectionD
-    let testType: String       // sectionE
-    let testNumber: Int        // sectionF
+    let operatorCDSID: String  // Operator identifier
     let startCoordinate: CLLocationCoordinate2D?
     var endCoordinate: CLLocationCoordinate2D?
     let startTime: Date
     var endTime: Date?
     var recordingSegments: [RecordingSegment] = []
     
-    // Legacy support - keep vin and testExecutionId for backward compatibility
+    // Legacy support - keep vin for backward compatibility
     var vin: String { operatorCDSID }
-    var testExecutionId: String { driverCDSID }
-    var tag: String { testType }
 }
 
 struct RecordingSegment: Identifiable, Codable {
@@ -29,11 +22,6 @@ struct RecordingSegment: Identifiable, Codable {
     let startTime: Date
     let endTime: Date
     let operatorCDSID: String
-    let driverCDSID: String
-    let testExecution: String
-    let testProcedure: String
-    let testType: String
-    let testNumber: Int
     let startCoordinate: CLLocationCoordinate2D?
     let endCoordinate: CLLocationCoordinate2D?
     let recognizedSpeech: String
@@ -56,8 +44,6 @@ struct RecordingSegment: Identifiable, Codable {
     
     // Legacy support
     var vin: String { operatorCDSID }
-    var testExecutionId: String { driverCDSID }
-    var tag: String { testType }
 }
 
 extension CLLocationCoordinate2D: Codable {
