@@ -160,7 +160,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
                 fileURL: recorder.url,
                 startTime: startTime,
                 endTime: Date(),
-                operatorCDSID: session.operatorCDSID,
                 startCoordinate: currentSegmentStartCoordinate,
                 endCoordinate: currentSegmentEndCoordinate,
                 recognizedSpeech: speechText
@@ -230,7 +229,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
                         fileURL: reconstructedURL,
                         startTime: segment.startTime,
                         endTime: segment.endTime,
-                        operatorCDSID: segment.operatorCDSID,
                         startCoordinate: segment.startCoordinate,
                         endCoordinate: segment.endCoordinate,
                         recognizedSpeech: segment.recognizedSpeech
@@ -242,36 +240,36 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         }
     }
     
-    func endTestSession() {
-        if isRecording { 
-            stopRecording() 
-        }
-        
-        if let session = currentTestSession {
-            // Create a new session instance with updated recording segments
-            var updatedSession = session
-            updatedSession.recordingSegments = recordingSegments
-            updatedSession.endTime = Date()
-            updatedSession.endCoordinate = getCurrentLocation()
-            
-            let sessions = getTestSessions()
-            var updatedSessions = sessions
-            updatedSessions.append(updatedSession)
-            
-            if let data = try? JSONEncoder().encode(updatedSessions) {
-                UserDefaults.standard.set(data, forKey: "testSessions")
-            }
-        }
-        
-        // Clean up
-        currentTestSession = nil
-        recordingSegments = []
-        currentSegmentNumber = 1
-        isListening = false
-        
-        // Post notification for UI update
-        NotificationCenter.default.post(name: NSNotification.Name("TestSessionEnded"), object: nil)
+func endTestSession() {
+    if isRecording { 
+        stopRecording() 
     }
+    
+    if let session = currentTestSession {
+        var updatedSession = session
+        updatedSession.recordingSegments = recordingSegments
+        updatedSession.endTime = Date()
+        updatedSession.endCoordinate = getCurrentLocation()
+        
+        let sessions = getTestSessions()
+        var updatedSessions = sessions
+        updatedSessions.append(updatedSession)
+        
+        if let data = try? JSONEncoder().encode(updatedSessions) {
+            UserDefaults.standard.set(data, forKey: "testSessions")
+            print("✅ Saved \(recordingSegments.count) recording segments to UserDefaults")
+        } else {
+            print("❌ Failed to encode test sessions")
+        }
+    }
+    
+    currentTestSession = nil
+    recordingSegments = []
+    currentSegmentNumber = 1
+    isListening = false
+    
+    NotificationCenter.default.post(name: NSNotification.Name("TestSessionEnded"), object: nil)
+}
     
     func checkPermissions() -> Bool {
         return permissionManager.allPermissionsGranted
@@ -289,9 +287,8 @@ class UnifiedAudioManager: NSObject, ObservableObject {
         permissionManager.openSettings()
     }
     
-    func startTestSession(operatorCDSID: String, startCoordinate: CLLocationCoordinate2D?) {
+    func startTestSession(startCoordinate: CLLocationCoordinate2D?) {
         currentTestSession = TestSession(
-            operatorCDSID: operatorCDSID,
             startCoordinate: startCoordinate,
             startTime: Date()
         )
@@ -314,21 +311,6 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     
     func startRecordingWithCoordinate() {
         guard !isRecording else {
-            return
-        }
-        
-        guard permissionManager.allPermissionsGranted else {
-            errorMessage = permissionManager.getMissingPermissionsMessage()
-            
-            permissionManager.requestAllPermissions { granted in
-                DispatchQueue.main.async {
-                    if granted {
-                        self.startRecordingWithCoordinate()
-                    } else {
-                        // Still missing permissions after request
-                    }
-                }
-            }
             return
         }
         

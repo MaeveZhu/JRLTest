@@ -140,10 +140,23 @@ struct DrivingRecordsView: View {
         }
     }
     
-    private func loadTestSessions() {
-        let sessions = audioManager.getTestSessions()
-        testSessions = sessions.sorted { $0.startTime > $1.startTime }
+// ... existing code ...
+
+private func loadTestSessions() {
+    let sessions = audioManager.getTestSessions()
+    print("�� DrivingRecordsView: Loaded \(sessions.count) test sessions")
+    
+    for (index, session) in sessions.enumerated() {
+        print("📱 Session \(index): \(session.recordingSegments.count) recording segments")
+        for (segIndex, segment) in session.recordingSegments.enumerated() {
+            print("📱   Segment \(segIndex): \(segment.fileName), speech: '\(segment.recognizedSpeech)'")
+        }
     }
+    
+    testSessions = sessions.sorted { $0.startTime > $1.startTime }
+}
+
+// ... existing code ...
 }
 
 struct SessionCardView: View {
@@ -174,15 +187,6 @@ struct SessionCardView: View {
     private var sessionHeader: some View {
         VStack(spacing: 15) {
             HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Voice Recording Session")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(.black)
-                    
-                    Text("Operator: \(session.operatorCDSID)")
-                        .font(.system(size: 14, weight: .ultraLight))
-                        .foregroundColor(.gray)
-                }
                 
                 Spacer()
                 

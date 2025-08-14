@@ -6,36 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		508D9CC42E40862B005B96A3 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 508D9CC32E40862B005B96A3 /* Intents.framework */; };
-		508D9CCF2E40862B005B96A3 /* IntentsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 508D9CCE2E40862B005B96A3 /* IntentsUI.framework */; };
-		508D9CD92E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 508D9CCD2E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		508D9CDC2E40862B005B96A3 /* JRLTest Siri Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 508D9CC12E40862A005B96A3 /* JRLTest Siri Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
-		508D9CD72E40862B005B96A3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 508D9CCC2E40862B005B96A3;
-			remoteInfo = "JRLTest Siri ExtensionUI";
-		};
-		508D9CDA2E40862B005B96A3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 508D9CC02E40862A005B96A3;
-			remoteInfo = "JRLTest Siri Extension";
-		};
-		50A23E0A2E3368D400454FFB /* PBXContainerItemProxy */ = {
+		50C269082E4DBE58008A0D3D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 50A23DFB2E3368D200454FFB;
 			remoteInfo = JRLTest;
 		};
-		50A23E142E3368D400454FFB /* PBXContainerItemProxy */ = {
+		50C269092E4DBE58008A0D3D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
 			proxyType = 1;
@@ -44,77 +23,9 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		508D9CE52E40862B005B96A3 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				508D9CDC2E40862B005B96A3 /* JRLTest Siri Extension.appex in Embed Foundation Extensions */,
-				508D9CD92E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
-/* Begin PBXFileReference section */
-		508D9CC12E40862A005B96A3 /* JRLTest Siri Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "JRLTest Siri Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		508D9CC32E40862B005B96A3 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
-		508D9CCD2E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "JRLTest Siri ExtensionUI.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		508D9CCE2E40862B005B96A3 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
-		50A23DFC2E3368D200454FFB /* JRLTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JRLTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		50A23E092E3368D400454FFB /* JRLTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JRLTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		50A23E132E3368D400454FFB /* JRLTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JRLTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		508D9CE02E40862B005B96A3 /* Exceptions for "JRLTest Siri ExtensionUI" folder in "JRLTest Siri ExtensionUI" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 508D9CCC2E40862B005B96A3 /* JRLTest Siri ExtensionUI */;
-		};
-		508D9CE42E40862B005B96A3 /* Exceptions for "JRLTest Siri Extension" folder in "JRLTest Siri Extension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 508D9CC02E40862A005B96A3 /* JRLTest Siri Extension */;
-		};
-		50A23ED92E371CAB00454FFB /* Exceptions for "JRLTest" folder in "JRLTest" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		508D9CC52E40862B005B96A3 /* JRLTest Siri Extension */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				508D9CE42E40862B005B96A3 /* Exceptions for "JRLTest Siri Extension" folder in "JRLTest Siri Extension" target */,
-			);
-			path = "JRLTest Siri Extension";
-			sourceTree = "<group>";
-		};
-		508D9CD02E40862B005B96A3 /* JRLTest Siri ExtensionUI */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				508D9CE02E40862B005B96A3 /* Exceptions for "JRLTest Siri ExtensionUI" folder in "JRLTest Siri ExtensionUI" target */,
-			);
-			path = "JRLTest Siri ExtensionUI";
-			sourceTree = "<group>";
-		};
 		50A23DFE2E3368D200454FFB /* JRLTest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				50A23ED92E371CAB00454FFB /* Exceptions for "JRLTest" folder in "JRLTest" target */,
-			);
 			path = JRLTest;
 			sourceTree = "<group>";
 		};
@@ -131,22 +42,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		508D9CBE2E40862A005B96A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				508D9CC42E40862B005B96A3 /* Intents.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		508D9CCA2E40862B005B96A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				508D9CCF2E40862B005B96A3 /* IntentsUI.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		50A23DF92E3368D200454FFB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -174,8 +69,6 @@
 		508D9CC22E40862B005B96A3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				508D9CC32E40862B005B96A3 /* Intents.framework */,
-				508D9CCE2E40862B005B96A3 /* IntentsUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -186,8 +79,6 @@
 				50A23DFE2E3368D200454FFB /* JRLTest */,
 				50A23E0C2E3368D400454FFB /* JRLTestTests */,
 				50A23E162E3368D400454FFB /* JRLTestUITests */,
-				508D9CC52E40862B005B96A3 /* JRLTest Siri Extension */,
-				508D9CD02E40862B005B96A3 /* JRLTest Siri ExtensionUI */,
 				508D9CC22E40862B005B96A3 /* Frameworks */,
 				50A23DFD2E3368D200454FFB /* Products */,
 			);
@@ -196,11 +87,6 @@
 		50A23DFD2E3368D200454FFB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				50A23DFC2E3368D200454FFB /* JRLTest.app */,
-				50A23E092E3368D400454FFB /* JRLTestTests.xctest */,
-				50A23E132E3368D400454FFB /* JRLTestUITests.xctest */,
-				508D9CC12E40862A005B96A3 /* JRLTest Siri Extension.appex */,
-				508D9CCD2E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -208,50 +94,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		508D9CC02E40862A005B96A3 /* JRLTest Siri Extension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 508D9CE12E40862B005B96A3 /* Build configuration list for PBXNativeTarget "JRLTest Siri Extension" */;
-			buildPhases = (
-				508D9CBD2E40862A005B96A3 /* Sources */,
-				508D9CBE2E40862A005B96A3 /* Frameworks */,
-				508D9CBF2E40862A005B96A3 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				508D9CC52E40862B005B96A3 /* JRLTest Siri Extension */,
-			);
-			name = "JRLTest Siri Extension";
-			packageProductDependencies = (
-			);
-			productName = "JRLTest Siri Extension";
-			productReference = 508D9CC12E40862A005B96A3 /* JRLTest Siri Extension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		508D9CCC2E40862B005B96A3 /* JRLTest Siri ExtensionUI */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 508D9CDD2E40862B005B96A3 /* Build configuration list for PBXNativeTarget "JRLTest Siri ExtensionUI" */;
-			buildPhases = (
-				508D9CC92E40862B005B96A3 /* Sources */,
-				508D9CCA2E40862B005B96A3 /* Frameworks */,
-				508D9CCB2E40862B005B96A3 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				508D9CD02E40862B005B96A3 /* JRLTest Siri ExtensionUI */,
-			);
-			name = "JRLTest Siri ExtensionUI";
-			packageProductDependencies = (
-			);
-			productName = "JRLTest Siri ExtensionUI";
-			productReference = 508D9CCD2E40862B005B96A3 /* JRLTest Siri ExtensionUI.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		50A23DFB2E3368D200454FFB /* JRLTest */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 50A23E1D2E3368D400454FFB /* Build configuration list for PBXNativeTarget "JRLTest" */;
@@ -259,22 +101,15 @@
 				50A23DF82E3368D200454FFB /* Sources */,
 				50A23DF92E3368D200454FFB /* Frameworks */,
 				50A23DFA2E3368D200454FFB /* Resources */,
-				508D9CE52E40862B005B96A3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				508D9CD82E40862B005B96A3 /* PBXTargetDependency */,
-				508D9CDB2E40862B005B96A3 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				50A23DFE2E3368D200454FFB /* JRLTest */,
 			);
 			name = JRLTest;
 			packageProductDependencies = (
 			);
 			productName = JRLTest;
-			productReference = 50A23DFC2E3368D200454FFB /* JRLTest.app */;
 			productType = "com.apple.product-type.application";
 		};
 		50A23E082E3368D400454FFB /* JRLTestTests */ = {
@@ -297,7 +132,6 @@
 			packageProductDependencies = (
 			);
 			productName = JRLTestTests;
-			productReference = 50A23E092E3368D400454FFB /* JRLTestTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		50A23E122E3368D400454FFB /* JRLTestUITests */ = {
@@ -320,7 +154,6 @@
 			packageProductDependencies = (
 			);
 			productName = JRLTestUITests;
-			productReference = 50A23E132E3368D400454FFB /* JRLTestUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -333,12 +166,6 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
-					508D9CC02E40862A005B96A3 = {
-						CreatedOnToolsVersion = 16.3;
-					};
-					508D9CCC2E40862B005B96A3 = {
-						CreatedOnToolsVersion = 16.3;
-					};
 					50A23DFB2E3368D200454FFB = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -369,27 +196,11 @@
 				50A23DFB2E3368D200454FFB /* JRLTest */,
 				50A23E082E3368D400454FFB /* JRLTestTests */,
 				50A23E122E3368D400454FFB /* JRLTestUITests */,
-				508D9CC02E40862A005B96A3 /* JRLTest Siri Extension */,
-				508D9CCC2E40862B005B96A3 /* JRLTest Siri ExtensionUI */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		508D9CBF2E40862A005B96A3 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		508D9CCB2E40862B005B96A3 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		50A23DFA2E3368D200454FFB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -414,20 +225,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		508D9CBD2E40862A005B96A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		508D9CC92E40862B005B96A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		50A23DF82E3368D200454FFB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -452,133 +249,19 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		508D9CD82E40862B005B96A3 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 508D9CCC2E40862B005B96A3 /* JRLTest Siri ExtensionUI */;
-			targetProxy = 508D9CD72E40862B005B96A3 /* PBXContainerItemProxy */;
-		};
-		508D9CDB2E40862B005B96A3 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 508D9CC02E40862A005B96A3 /* JRLTest Siri Extension */;
-			targetProxy = 508D9CDA2E40862B005B96A3 /* PBXContainerItemProxy */;
-		};
 		50A23E0B2E3368D400454FFB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
-			targetProxy = 50A23E0A2E3368D400454FFB /* PBXContainerItemProxy */;
+			targetProxy = 50C269082E4DBE58008A0D3D /* PBXContainerItemProxy */;
 		};
 		50A23E152E3368D400454FFB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
-			targetProxy = 50A23E142E3368D400454FFB /* PBXContainerItemProxy */;
+			targetProxy = 50C269092E4DBE58008A0D3D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		508D9CDE2E40862B005B96A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 87FZ4MRH6V;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "JRLTest Siri ExtensionUI/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "JRLTest Siri ExtensionUI";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Version1.JRLTest.JRLTest-Siri-ExtensionUI";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		508D9CDF2E40862B005B96A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 87FZ4MRH6V;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "JRLTest Siri ExtensionUI/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "JRLTest Siri ExtensionUI";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Version1.JRLTest.JRLTest-Siri-ExtensionUI";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		508D9CE22E40862B005B96A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 87FZ4MRH6V;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "JRLTest Siri Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "JRLTest Siri Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Version1.JRLTest.JRLTest-Siri-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		508D9CE32E40862B005B96A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 87FZ4MRH6V;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "JRLTest Siri Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "JRLTest Siri Extension";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Version1.JRLTest.JRLTest-Siri-Extension";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		50A23E1B2E3368D400454FFB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -847,24 +530,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		508D9CDD2E40862B005B96A3 /* Build configuration list for PBXNativeTarget "JRLTest Siri ExtensionUI" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				508D9CDE2E40862B005B96A3 /* Debug */,
-				508D9CDF2E40862B005B96A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		508D9CE12E40862B005B96A3 /* Build configuration list for PBXNativeTarget "JRLTest Siri Extension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				508D9CE22E40862B005B96A3 /* Debug */,
-				508D9CE32E40862B005B96A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		50A23DF72E3368D200454FFB /* Build configuration list for PBXProject "JRLTest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

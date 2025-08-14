@@ -23,7 +23,6 @@ struct JRLTestApp: App {
     @StateObject private var permissionManager = PermissionManager.shared
     
     init() {
-        // Register App Shortcuts for Siri
         DrivingTestShortcuts.updateAppShortcutParameters()
     }
     
@@ -31,31 +30,26 @@ struct JRLTestApp: App {
         WindowGroup {
             ContentView()
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    // Handle app becoming active
                     handleAppBecameActive()
                     
-                    // Re-register shortcuts when app becomes active
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         DrivingTestShortcuts.updateAppShortcutParameters()
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SiriDrivingTestStarted"))) { notification in
-                    // Handle Siri-initiated driving test
                     handleSiriDrivingTestStarted(notification)
                 }
         }
     }
     
     private func handleAppBecameActive() {
-        // Re-check permissions when app becomes active
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             permissionManager.checkLocationPermission()
         }
     }
     
     private func handleSiriDrivingTestStarted(_ notification: Notification) {
-        if let testSession = notification.object {
-            // Handle Siri test session
+        if notification.object != nil {
         }
     }
 }
@@ -67,25 +61,32 @@ struct StartDrivingTestIntent: AppIntent {
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        print("🎤 StartDrivingTestIntent: perform() called")
+        
         // Get current location
         let currentLocation = await getCurrentLocation()
         
-        // Create test session (using simplified TestSession structure)
+        // Create test session
         let testSession = TestSession(
-            operatorCDSID: "SIRI_TEST",
             startCoordinate: currentLocation,
             startTime: Date()
         )
         
-        // Post notification to update UI in main app and start recording
+        // Post notification to start recording immediately
         DispatchQueue.main.async {
             NotificationCenter.default.post(
                 name: NSNotification.Name("SiriDrivingTestStarted"),
                 object: testSession
             )
+            
+            // Also start recording immediately
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SiriStartRecording"),
+                object: nil
+            )
         }
         
-        return .result(dialog: "Driving test started. Recording location and voice data.")
+        return .result(dialog: "Driving test started. I'm now recording your voice and location data.")
     }
     
     private func getCurrentLocation() async -> CLLocationCoordinate2D? {
@@ -141,10 +142,10 @@ struct DrivingTestShortcuts: AppShortcutsProvider {
             AppShortcut(
                 intent: StartDrivingTestIntent(),
                 phrases: [
-                    "Report driving test in \(.applicationName)",
                     "Start driving test in \(.applicationName)",
                     "Begin test with \(.applicationName)",
-                    "Start test using \(.applicationName)"
+                    "Start recording my drive in \(.applicationName)",
+                    "Begin voice recording in \(.applicationName)"
                 ],
                 shortTitle: "Start Test",
                 systemImageName: "car"

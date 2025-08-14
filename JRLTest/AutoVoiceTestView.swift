@@ -2,7 +2,6 @@ import SwiftUI
 import CoreLocation
 
 struct AutoVoiceTestView: View {
-    let vin: String
     let startCoordinate: CLLocationCoordinate2D?
     @Binding var showingResultsView: Bool
     
@@ -195,7 +194,6 @@ struct AutoVoiceTestView: View {
         }
         
         audioManager.startTestSession(
-            operatorCDSID: vin,
             startCoordinate: startCoordinate
         )
     }
@@ -222,6 +220,9 @@ struct AutoVoiceTestView: View {
         ) { [self] notification in
             guard let testSession = notification.object as? TestSession else { return }
             
+            print("🎤 SiriDrivingTestStarted received, setting up session")
+            
+            // Use the Siri-created session
             audioManager.currentTestSession = testSession
             audioManager.startListening()
             
@@ -235,6 +236,7 @@ struct AutoVoiceTestView: View {
             object: nil,
             queue: .main
         ) { [self] _ in
+            print(" SiriStartRecording received")
             if !audioManager.isRecording {
                 audioManager.startRecordingWithCoordinate()
             }
@@ -245,6 +247,7 @@ struct AutoVoiceTestView: View {
             object: nil,
             queue: .main
         ) { [self] _ in
+            print("🛑 SiriStopRecording received")
             if audioManager.isRecording {
                 audioManager.stopRecording()
             }

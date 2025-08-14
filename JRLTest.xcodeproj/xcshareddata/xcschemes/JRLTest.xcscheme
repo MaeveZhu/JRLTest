@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "50A23DFB2E3368D200454FFB"
-               BuildableName = "JRLTest.app"
+               BuildableName = "JRLTest"
                BlueprintName = "JRLTest"
                ReferencedContainer = "container:JRLTest.xcodeproj">
             </BuildableReference>
@@ -36,7 +36,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "50A23E082E3368D400454FFB"
-               BuildableName = "JRLTestTests.xctest"
+               BuildableName = "JRLTestTests"
                BlueprintName = "JRLTestTests"
                ReferencedContainer = "container:JRLTest.xcodeproj">
             </BuildableReference>
@@ -47,7 +47,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "50A23E122E3368D400454FFB"
-               BuildableName = "JRLTestUITests.xctest"
+               BuildableName = "JRLTestUITests"
                BlueprintName = "JRLTestUITests"
                ReferencedContainer = "container:JRLTest.xcodeproj">
             </BuildableReference>
@@ -69,7 +69,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "50A23DFB2E3368D200454FFB"
-            BuildableName = "JRLTest.app"
+            BuildableName = "JRLTest"
             BlueprintName = "JRLTest"
             ReferencedContainer = "container:JRLTest.xcodeproj">
          </BuildableReference>
@@ -86,7 +86,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "50A23DFB2E3368D200454FFB"
-            BuildableName = "JRLTest.app"
+            BuildableName = "JRLTest"
             BlueprintName = "JRLTest"
             ReferencedContainer = "container:JRLTest.xcodeproj">
          </BuildableReference>

@@ -3,15 +3,11 @@ import CoreLocation
 
 struct TestSession: Identifiable, Codable {
     let id = UUID()
-    let operatorCDSID: String  // Operator identifier
     let startCoordinate: CLLocationCoordinate2D?
     var endCoordinate: CLLocationCoordinate2D?
     let startTime: Date
     var endTime: Date?
     var recordingSegments: [RecordingSegment] = []
-    
-    // Legacy support - keep vin for backward compatibility
-    var vin: String { operatorCDSID }
 }
 
 struct RecordingSegment: Identifiable, Codable {
@@ -21,7 +17,6 @@ struct RecordingSegment: Identifiable, Codable {
     let fileURL: URL
     let startTime: Date
     let endTime: Date
-    let operatorCDSID: String
     let startCoordinate: CLLocationCoordinate2D?
     let endCoordinate: CLLocationCoordinate2D?
     let recognizedSpeech: String
@@ -41,9 +36,6 @@ struct RecordingSegment: Identifiable, Codable {
         formatter.timeStyle = .short
         return formatter.string(from: startTime)
     }
-    
-    // Legacy support
-    var vin: String { operatorCDSID }
 }
 
 extension CLLocationCoordinate2D: Codable {
