@@ -51,6 +51,7 @@ struct ContentView: View {
                     VStack(spacing: 30) {
                         navigationCard(
                             destination: AutoVoiceTestView(
+                                vin: "AUTO_TEST",
                                 startCoordinate: nil,
                                 showingResultsView: .constant(false)
                             ),

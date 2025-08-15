@@ -4,11 +4,15 @@
 <dict>
 	<key>INIntentsRestrictedWhileLocked</key>
 	<array>
-		<string>ReportDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
+		<string>StartReportingIntent</string>
 	</array>
 	<key>INIntentsSupported</key>
 	<array>
-		<string>ReportDrivingTestIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
+		<string>StartReportingIntent</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -31,7 +35,9 @@
 	</dict>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>ReportDrivingTestIntentIntent</string>
+		<string>StartRecordingIntent</string>
+		<string>StopRecordingIntent</string>
+		<string>StartReportingIntent</string>
 	</array>
 </dict>
 </plist>

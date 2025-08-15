@@ -2,10 +2,11 @@ import SwiftUI
 import CoreLocation
 
 struct AutoVoiceTestView: View {
+    let vin: String
     let startCoordinate: CLLocationCoordinate2D?
     @Binding var showingResultsView: Bool
     
-    @StateObject private var audioManager = UnifiedAudioManager.shared
+    @StateObject private var carTestManager = CarTestManager.shared
     @StateObject private var locationManager = LocationManager()
     @Environment(\.dismiss) private var dismiss
     @State private var animationPhase: CGFloat = 0
@@ -28,29 +29,24 @@ struct AutoVoiceTestView: View {
                     Spacer()
                     
                     VStack(spacing: 40) {
-                        // Siri Command Instructions
+                        // Voice Command Instructions
                         VStack(spacing: 15) {
-                            Text("Siri Commands")
+                            Text("Voice Commands")
                                 .font(.system(size: 18, weight: .light))
                                 .foregroundColor(.black)
                             
                             VStack(spacing: 8) {
-                                Text("Say: \"Hey Siri, Start Driving Test Audio\"")
+                                Text("Say: \"开始汽车测试录音\"")
                                     .font(.system(size: 12, weight: .ultraLight))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                 
-                                Text("Say: \"Hey Siri, Stop Driving Test Audio\"")
+                                Text("Say: \"停止汽车测试录音\"")
                                     .font(.system(size: 12, weight: .ultraLight))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                 
                                 Text("Recording will auto-stop after 3 minutes")
-                                    .font(.system(size: 10, weight: .ultraLight))
-                                    .foregroundColor(.gray.opacity(0.7))
-                                    .multilineTextAlignment(.center)
-                                
-                                Text("Or use the buttons below")
                                     .font(.system(size: 10, weight: .ultraLight))
                                     .foregroundColor(.gray.opacity(0.7))
                                     .multilineTextAlignment(.center)
@@ -62,36 +58,35 @@ struct AutoVoiceTestView: View {
                         }
                         
                         Button(action: {
-                            startListening()
+                            startRecording()
                         }) {
                             ZStack {
                                 Circle()
-                                    .fill(audioManager.isListening ? Color.gray : Color.black)
+                                    .fill(carTestManager.isRecording ? Color.red : Color.black)
                                     .frame(width: 120, height: 120)
                                 
                                 VStack(spacing: 8) {
-                                    Image(systemName: "ear")
+                                    Image(systemName: carTestManager.isRecording ? "stop.fill" : "record.circle")
                                         .font(.system(size: 24, weight: .light))
                                         .foregroundColor(.white)
                                     
-                                    Text("开始监听")
+                                    Text(carTestManager.isRecording ? "停止录音" : "开始录音")
                                         .font(.system(size: 14, weight: .light))
                                         .foregroundColor(.white)
                                 }
                             }
                         }
-                        .disabled(audioManager.isRecording)
                         
-                        // Speech recognition status
-                        if audioManager.isRecognizingSpeech {
+                        // Recording duration display
+                        if carTestManager.isRecording {
                             VStack(spacing: 8) {
-                                Text("🎤 Speech Recognition Active")
-                                    .font(.system(size: 12, weight: .light))
-                                    .foregroundColor(.blue)
+                                Text("Recording: \(formatDuration(carTestManager.recordingDuration))")
+                                    .font(.system(size: 16, weight: .light))
+                                    .foregroundColor(.red)
                                 
-                                if !audioManager.recognizedSpeech.isEmpty {
-                                    Text(audioManager.recognizedSpeech)
-                                        .font(.system(size: 10, weight: .ultraLight))
+                                if !carTestManager.recognizedSpeech.isEmpty {
+                                    Text("Speech: \(carTestManager.recognizedSpeech)")
+                                        .font(.system(size: 12, weight: .ultraLight))
                                         .foregroundColor(.gray)
                                         .multilineTextAlignment(.center)
                                         .padding(.horizontal, 20)
@@ -139,12 +134,11 @@ struct AutoVoiceTestView: View {
             setupSiriNotifications()
         }
         .onDisappear {
-            audioManager.stopListening()
             removeSiriNotifications()
         }
     }
     
-    private var abstractBackgroundElements: some View {
+    var abstractBackgroundElements: some View {
         ZStack {
             Circle()
                 .stroke(Color.gray.opacity(0.02), lineWidth: 1)
@@ -163,7 +157,7 @@ struct AutoVoiceTestView: View {
         }
     }
     
-    private func startAnimations() {
+    func startAnimations() {
         withAnimation {
             pulseScale = 1.3
             recordingPulse = 1.5
@@ -174,100 +168,67 @@ struct AutoVoiceTestView: View {
         }
     }
     
-    private func formatDuration(_ duration: TimeInterval) -> String {
+    func formatDuration(_ duration: TimeInterval) -> String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
     
-    private func startAutoVoiceTest() {
-        audioManager.setLocationManager(locationManager)
+    func startAutoVoiceTest() {
+        carTestManager.setLocationManager(locationManager)
         
-        audioManager.requestPermissions { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    // Permissions granted
-                } else {
-                    // Some permissions still missing
-                }
-            }
-        }
-        
-        audioManager.startTestSession(
+        carTestManager.startTestSession(
             startCoordinate: startCoordinate
         )
     }
     
-    private func startListening() {
-        audioManager.startListening()
+    func startRecording() {
+        if carTestManager.isRecording {
+            carTestManager.stopRecording()
+        } else {
+            carTestManager.startRecording()
+        }
     }
     
-    private func endTest() {
-        audioManager.stopListening()
-        
-        audioManager.endTestSession()
+    func endTest() {
+        carTestManager.endTestSession()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             dismiss()
         }
     }
     
-    private func setupSiriNotifications() {
+    func setupSiriNotifications() {
         NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("SiriDrivingTestStarted"),
+            forName: NSNotification.Name("StartRecording"),
             object: nil,
             queue: .main
-        ) { [self] notification in
-            guard let testSession = notification.object as? TestSession else { return }
-            
-            print("🎤 SiriDrivingTestStarted received, setting up session")
-            
-            // Use the Siri-created session
-            audioManager.currentTestSession = testSession
-            audioManager.startListening()
-            
-            DispatchQueue.main.async {
-                self.audioManager.isRecording = true
+        ) { [self] _ in
+            if !carTestManager.isRecording {
+                carTestManager.startRecording()
             }
         }
         
         NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("SiriStartRecording"),
+            forName: NSNotification.Name("StopRecording"),
             object: nil,
             queue: .main
         ) { [self] _ in
-            print(" SiriStartRecording received")
-            if !audioManager.isRecording {
-                audioManager.startRecordingWithCoordinate()
-            }
-        }
-        
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("SiriStopRecording"),
-            object: nil,
-            queue: .main
-        ) { [self] _ in
-            print("🛑 SiriStopRecording received")
-            if audioManager.isRecording {
-                audioManager.stopRecording()
+            if carTestManager.isRecording {
+                carTestManager.stopRecording()
             }
         }
     }
     
-    private func removeSiriNotifications() {
+    func removeSiriNotifications() {
         NotificationCenter.default.removeObserver(
             self,
-            name: NSNotification.Name("SiriDrivingTestStarted"),
+            name: NSNotification.Name("StartRecording"),
             object: nil
         )
         NotificationCenter.default.removeObserver(
             self,
-            name: NSNotification.Name("SiriStartRecording"),
-            object: nil
-        )
-        NotificationCenter.default.removeObserver(
-            self,
-            name: NSNotification.Name("SiriStopRecording"),
+            name: NSNotification.Name("StopRecording"),
             object: nil
         )
     }

@@ -1,6 +1,5 @@
 import Foundation
 import AVFoundation
-import Intents
 import CoreLocation
 import Speech
 
@@ -44,26 +43,7 @@ class UnifiedAudioManager: NSObject, ObservableObject {
     override init() {
         super.init()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.setupSiriKit()
             self.setupAudioSession()
-        }
-    }
-
-    private func setupSiriKit() {
-        let currentStatus = INPreferences.siriAuthorizationStatus()
-        
-        if currentStatus == .authorized {
-            self.isListening = true
-        } else {
-            permissionManager.requestSiriPermission { [weak self] granted in
-                DispatchQueue.main.async {
-                    if granted {
-                        self?.isListening = true
-                    } else {
-                        self?.errorMessage = "Siri权限未授权，请在设置中启用"
-                    }
-                }
-            }
         }
     }
     

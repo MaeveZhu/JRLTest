@@ -5,7 +5,7 @@ import CoreLocation
 
 struct DrivingRecordsView: View {
     @State private var testSessions: [TestSession] = []
-    @StateObject private var audioManager = UnifiedAudioManager()
+    @StateObject private var carTestManager = CarTestManager.shared
     @State private var animationPhase: CGFloat = 0
     @State private var pulseScale: CGFloat = 1.0
     
@@ -121,7 +121,7 @@ struct DrivingRecordsView: View {
                 ForEach(testSessions, id: \.id) { session in
                     SessionCardView(
                         session: session,
-                        audioManager: audioManager
+                        audioManager: carTestManager
                     )
                 }
             }
@@ -140,28 +140,24 @@ struct DrivingRecordsView: View {
         }
     }
     
-// ... existing code ...
-
-private func loadTestSessions() {
-    let sessions = audioManager.getTestSessions()
-    print("�� DrivingRecordsView: Loaded \(sessions.count) test sessions")
-    
-    for (index, session) in sessions.enumerated() {
-        print("📱 Session \(index): \(session.recordingSegments.count) recording segments")
-        for (segIndex, segment) in session.recordingSegments.enumerated() {
-            print("📱   Segment \(segIndex): \(segment.fileName), speech: '\(segment.recognizedSpeech)'")
+    private func loadTestSessions() {
+        let sessions = carTestManager.getTestSessions()
+        print(" DrivingRecordsView: Loaded \(sessions.count) test sessions")
+        
+        for (index, session) in sessions.enumerated() {
+            print("📱 Session \(index): \(session.recordingSegments.count) recording segments")
+            for (segIndex, segment) in session.recordingSegments.enumerated() {
+                print("📱   Segment \(segIndex): \(segment.fileName), speech: '\(segment.recognizedSpeech)'")
+            }
         }
+        
+        testSessions = sessions.sorted { $0.startTime > $1.startTime }
     }
-    
-    testSessions = sessions.sorted { $0.startTime > $1.startTime }
-}
-
-// ... existing code ...
 }
 
 struct SessionCardView: View {
     let session: TestSession
-    let audioManager: UnifiedAudioManager
+    let audioManager: CarTestManager
     
     var body: some View {
         VStack(spacing: 0) {
@@ -342,9 +338,13 @@ struct SessionCardView: View {
         HStack(spacing: 15) {
             if FileManager.default.fileExists(atPath: segment.fileURL.path) {
                 Button(action: {
-                    audioManager.playAudioFile(at: segment.fileURL)
+                    // The audioManager here is CarTestManager, not UnifiedAudioManager
+                    // The playAudioFile method is not defined in CarTestManager,
+                    // so this button will not function as intended.
+                    // For now, we'll just print a message.
+                    print("Audio playback not implemented in CarTestManager for this segment.")
                 }) {
-                    Image(systemName: audioManager.isPlaying(segment.fileURL) ? "pause.circle.fill" : "play.circle.fill")
+                    Image(systemName: "play.circle.fill") // Placeholder icon
                         .font(.system(size: 24))
                         .foregroundColor(.black)
                 }

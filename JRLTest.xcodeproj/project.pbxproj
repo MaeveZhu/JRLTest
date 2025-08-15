@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXContainerItemProxy section */
-		50C269082E4DBE58008A0D3D /* PBXContainerItemProxy */ = {
+		50A23E0A2E3368D400454FFB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 50A23DFB2E3368D200454FFB;
 			remoteInfo = JRLTest;
 		};
-		50C269092E4DBE58008A0D3D /* PBXContainerItemProxy */ = {
+		50A23E142E3368D400454FFB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 50A23DF42E3368D200454FFB /* Project object */;
 			proxyType = 1;
@@ -23,9 +23,43 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		508D9CE52E40862B005B96A3 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		508D9CC32E40862B005B96A3 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
+		508D9CCE2E40862B005B96A3 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
+		50A23DFC2E3368D200454FFB /* JRLTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JRLTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		50A23E092E3368D400454FFB /* JRLTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JRLTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		50A23E132E3368D400454FFB /* JRLTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JRLTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		50A23ED92E371CAB00454FFB /* Exceptions for "JRLTest" folder in "JRLTest" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		50A23DFE2E3368D200454FFB /* JRLTest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				50A23ED92E371CAB00454FFB /* Exceptions for "JRLTest" folder in "JRLTest" target */,
+			);
 			path = JRLTest;
 			sourceTree = "<group>";
 		};
@@ -69,6 +103,8 @@
 		508D9CC22E40862B005B96A3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				508D9CC32E40862B005B96A3 /* Intents.framework */,
+				508D9CCE2E40862B005B96A3 /* IntentsUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -87,6 +123,9 @@
 		50A23DFD2E3368D200454FFB /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				50A23DFC2E3368D200454FFB /* JRLTest.app */,
+				50A23E092E3368D400454FFB /* JRLTestTests.xctest */,
+				50A23E132E3368D400454FFB /* JRLTestUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,15 +140,20 @@
 				50A23DF82E3368D200454FFB /* Sources */,
 				50A23DF92E3368D200454FFB /* Frameworks */,
 				50A23DFA2E3368D200454FFB /* Resources */,
+				508D9CE52E40862B005B96A3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				50A23DFE2E3368D200454FFB /* JRLTest */,
+			);
 			name = JRLTest;
 			packageProductDependencies = (
 			);
 			productName = JRLTest;
+			productReference = 50A23DFC2E3368D200454FFB /* JRLTest.app */;
 			productType = "com.apple.product-type.application";
 		};
 		50A23E082E3368D400454FFB /* JRLTestTests */ = {
@@ -132,6 +176,7 @@
 			packageProductDependencies = (
 			);
 			productName = JRLTestTests;
+			productReference = 50A23E092E3368D400454FFB /* JRLTestTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		50A23E122E3368D400454FFB /* JRLTestUITests */ = {
@@ -154,6 +199,7 @@
 			packageProductDependencies = (
 			);
 			productName = JRLTestUITests;
+			productReference = 50A23E132E3368D400454FFB /* JRLTestUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -252,12 +298,12 @@
 		50A23E0B2E3368D400454FFB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
-			targetProxy = 50C269082E4DBE58008A0D3D /* PBXContainerItemProxy */;
+			targetProxy = 50A23E0A2E3368D400454FFB /* PBXContainerItemProxy */;
 		};
 		50A23E152E3368D400454FFB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 50A23DFB2E3368D200454FFB /* JRLTest */;
-			targetProxy = 50C269092E4DBE58008A0D3D /* PBXContainerItemProxy */;
+			targetProxy = 50A23E142E3368D400454FFB /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
