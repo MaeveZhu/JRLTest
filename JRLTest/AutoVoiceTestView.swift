@@ -70,14 +70,14 @@ struct AutoVoiceTestView: View {
                             ZStack {
                                 Circle()
                                     .fill(audioManager.isListening ? Color.gray : Color.black)
-                                    .frame(width: 120, height: 120)
+                                    .frame(width: 140, height: 140)
                                 
                                 VStack(spacing: 8) {
                                     Image(systemName: "ear")
                                         .font(.system(size: 24, weight: .light))
                                         .foregroundColor(.white)
                                     
-                                    Text("开始监听")
+                                    Text("Start Monitoring")
                                         .font(.system(size: 14, weight: .light))
                                         .foregroundColor(.white)
                                 }
@@ -111,7 +111,7 @@ struct AutoVoiceTestView: View {
                             ZStack {
                                 Circle()
                                     .fill(Color.white)
-                                    .frame(width: 120, height: 120)
+                                    .frame(width: 140, height: 140)
                                     .overlay(
                                         Circle()
                                             .stroke(Color.black, lineWidth: 2)
@@ -122,7 +122,7 @@ struct AutoVoiceTestView: View {
                                         .font(.system(size: 24, weight: .light))
                                         .foregroundColor(.black)
                                     
-                                    Text("结束测试")
+                                    Text("End Session")
                                         .font(.system(size: 14, weight: .light))
                                         .foregroundColor(.black)
                                 }

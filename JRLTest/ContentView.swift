@@ -33,11 +33,11 @@ struct ContentView: View {
                 
                 VStack(spacing: 60) {
                     VStack(spacing: 20) {
-                        Text("JRL")
+                        Text("JLR")
                             .font(.system(size: 48, weight: .ultraLight, design: .default))
                             .foregroundColor(.black)
                         
-                        Text("TEST")
+                        Text("MT Client")
                             .font(.system(size: 48, weight: .thin, design: .default))
                             .foregroundColor(.gray)
                         
@@ -52,24 +52,24 @@ struct ContentView: View {
                         navigationCard(
                             destination: TestFormView(),
                             icon: "doc.text",
-                            title: "开始测试",
-                            subtitle: "新建测试会话",
+                            title: "Event Log",
+                            subtitle: "Monitoring and Recording",
                             delay: 0.1
                         )
                         
                         navigationCard(
                             destination: DrivingRecordsView(),
                             icon: "list.bullet.clipboard",
-                            title: "行车记录", 
-                            subtitle: "查看历史记录",
+                            title: "History Event",
+                            subtitle: "Audio Transcripts with Coordinates",
                             delay: 0.2
                         )
                         
                         navigationCard(
                             destination: WebBrowserView(),
                             icon: "globe",
-                            title: "网页浏览器",
-                            subtitle: "访问网站页面",
+                            title: "MT Manager",
+                            subtitle: "Embedded Dashboard",
                             delay: 0.4
                         )
                     }
@@ -85,7 +85,7 @@ struct ContentView: View {
     
     private var errorView: some View {
         VStack(spacing: 20) {
-            Text("应用启动错误")
+            Text("Error View")
                 .font(.title)
                 .foregroundColor(.red)
             
@@ -94,7 +94,7 @@ struct ContentView: View {
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
             
-            Button("重试") {
+            Button("Try Again") {
                 hasError = false
                 errorMessage = ""
             }
